@@ -91,6 +91,23 @@ is bounded below, not excluded.
 | An append-only journal | Check-and-append under the journal's file lock |
 | SQLite | One row in one transaction |
 | mxdb | One control record under the store's single writer |
+| A directory of files | A `flock` on one lock file around the read, the compare and the replace of the system's record |
+
+<a id="file-store"></a>
+
+### The file store
+
+A directory serves processes that start and end on one host. It holds one file per system, named by the system's code,
+whose content is `last_second` in decimal, and two kinds of lock file:
+
+- `lock` is held with `flock` for each compare-and-set, so two processes never interleave a read and a write.
+- `<system>.active` is held with `flock` from the allocator's start until its end or the end of the process. The
+  operating system drops it when the process dies, so a crashed allocator does not block the next.
+
+A record is replaced as a whole: written to a temporary file, synced, renamed over the record, and the directory is
+synced. A compare-and-set returns only after that, so a grant is on disk before its lease is returned. A record that
+cannot be read or parsed reads as the largest second, and the allocator then refuses with `clock-behind` rather than
+grant again.
 
 ## Restore and clone
 
