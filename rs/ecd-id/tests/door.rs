@@ -7,8 +7,8 @@ use std::collections::HashSet;
 use std::sync::Arc;
 
 use ecd_id::{
-    Admission, Class, Code, Door, Id, LEASE_TERM_MAX, Lease, ManualClock, ManualPid, Minter, OsRandom, Refusal,
-    detached_lease,
+    Admission, Class, Code, DEFAULT_AHEAD_MS, Door, Id, LEASE_TERM_MAX, Lease, ManualClock, ManualPid, Minter, OsRandom,
+    Refusal, detached_lease,
 };
 
 const T: u64 = 1_795_271_400_000;
@@ -120,7 +120,19 @@ fn g4_door_refuses_an_id_stamped_ahead_of_its_clock() {
     fast.set(T + 5 + AHEAD_MS);
     let edge = minter("emq", 7, fast).mint(code("evt")).unwrap();
     assert_eq!(d.admit(edge, None), Ok(Admission::Own(edge)));
-    println!("G4 door: an id {} ms ahead is refused; {} ms ahead is admitted", AHEAD_MS + 1, AHEAD_MS);
+    // The default limit.
+    let mut dd = Door::new(minter("emq", 1, door_clock.clone()), &[code("evt")], DEFAULT_AHEAD_MS, door_clock.clone());
+    let at = |ms: u64| minter("emq", 7, Arc::new(ManualClock::new(ms))).mint(code("evt")).unwrap();
+    assert_eq!(dd.admit(at(T + 5 + DEFAULT_AHEAD_MS + 1), None), Err(Refusal::Ahead));
+    let ok = at(T + 5 + DEFAULT_AHEAD_MS);
+    assert_eq!(dd.admit(ok, None), Ok(Admission::Own(ok)));
+    println!(
+        "G4 door: an id {} ms ahead is refused; {} ms ahead is admitted; with the default limit, {} refused and {} admitted",
+        AHEAD_MS + 1,
+        AHEAD_MS,
+        DEFAULT_AHEAD_MS + 1,
+        DEFAULT_AHEAD_MS
+    );
 }
 
 #[test]

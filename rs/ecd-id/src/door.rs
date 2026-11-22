@@ -6,6 +6,9 @@ use std::sync::Arc;
 
 use crate::{Class, Clock, Code, Id, Lease, Minter, Refusal};
 
+/// The default limit on how far ahead of the door's clock an id may be stamped: 5 seconds.
+pub const DEFAULT_AHEAD_MS: u64 = 5_000;
+
 /// The result of an admission.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Admission {
@@ -26,7 +29,8 @@ pub struct Door {
 
 impl Door {
     /// A door that mints with `minter` (its lease names the door's system), accepts `kinds`, and refuses ids
-    /// stamped more than `ahead_ms` milliseconds ahead of `clock`.
+    /// stamped more than `ahead_ms` milliseconds ahead of `clock` (`DEFAULT_AHEAD_MS` unless the system sets
+    /// another).
     pub fn new(minter: Minter, kinds: &[Code], ahead_ms: u64, clock: Arc<dyn Clock>) -> Door {
         Door { minter, kinds: kinds.to_vec(), ahead_ms, clock, tokens: HashMap::new() }
     }

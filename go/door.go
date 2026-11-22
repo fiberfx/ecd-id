@@ -9,6 +9,9 @@ type Admission struct {
 	ID    ID
 }
 
+// DefaultAheadMs is the default limit on how far ahead of the door's clock an id may be stamped: 5 seconds.
+const DefaultAheadMs = 5_000
+
 // Door is the door of one registered system (spec/lease.md#door).
 type Door struct {
 	minter  *Minter
@@ -19,7 +22,7 @@ type Door struct {
 }
 
 // NewDoor returns a door that mints with minter (its lease names the door's system), accepts kinds, and refuses ids
-// stamped more than aheadMs milliseconds ahead of clock.
+// stamped more than aheadMs milliseconds ahead of clock (DefaultAheadMs unless the system sets another).
 func NewDoor(minter *Minter, kinds []Code, aheadMs uint64, clock Clock) *Door {
 	d := &Door{minter: minter, kinds: map[Code]bool{}, aheadMs: aheadMs, clock: clock, tokens: map[ID]ID{}}
 	for _, k := range kinds {

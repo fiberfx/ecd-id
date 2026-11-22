@@ -154,7 +154,8 @@ is drawn again at every process start.
 ## The door
 
 A registered system admits incoming ids through its door. The door holds the system's code, the kinds it accepts, its
-clock, a limit on how far ahead of that clock an id may be stamped, and its own minter. It checks in this order:
+clock, a limit on how far ahead of that clock an id may be stamped (a parameter of the door; 5,000 ms by default), and
+its own minter. It checks in this order:
 
 | Check | Result |
 |---|---|

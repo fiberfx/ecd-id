@@ -324,5 +324,17 @@ func TestG04_DoorRefusesAheadAndForeignKind(t *testing.T) {
 	if _, err := d.Admit(msg, nil); err != ErrKind {
 		t.Fatalf("foreign kind: %v", err)
 	}
-	fmt.Println("G4 door: an id 2001 ms ahead is refused; 2000 ms ahead is admitted; a kind the stream does not carry is refused")
+	dd := NewDoor(NewMinter(mustLease(t, "emq", 1, t0, t0+LeaseTermMax), doorClock, NewManualPid(1)),
+		[]Code{MustCode("evt")}, DefaultAheadMs, doorClock)
+	at := func(ms uint64) ID {
+		id, _ := NewMinter(mustLease(t, "emq", 7, t0, t0+LeaseTermMax), NewManualClock(ms), NewManualPid(1)).Mint(MustCode("evt"))
+		return id
+	}
+	if _, err := dd.Admit(at(t0+5+DefaultAheadMs+1), nil); err != ErrAhead {
+		t.Fatalf("default limit, ahead: %v", err)
+	}
+	if a, err := dd.Admit(at(t0+5+DefaultAheadMs), nil); err != nil || !a.Own {
+		t.Fatalf("default limit, edge: %v", err)
+	}
+	fmt.Printf("G4 door: an id 2001 ms ahead is refused; 2000 ms ahead is admitted; with the default limit, %d refused and %d admitted; a kind the stream does not carry is refused\n", DefaultAheadMs+1, DefaultAheadMs)
 }

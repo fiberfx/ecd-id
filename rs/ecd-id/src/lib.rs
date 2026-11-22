@@ -19,7 +19,7 @@ mod stream;
 
 use std::fmt;
 
-pub use door::{Admission, Door};
+pub use door::{Admission, DEFAULT_AHEAD_MS, Door};
 pub use embed::{BRD, BRD14_EPOCH, brd14_decode, brd14_encode, embed, unembed};
 pub use id::{ALPHABET, COUNT_LIMIT, Class, Code, Id, SYS, TEXT_LEN, TIME_MAX, WRITER_MAX, code};
 pub use lease::{

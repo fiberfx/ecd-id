@@ -39,7 +39,8 @@ python3 -I model/vectors.py --check          # the committed vectors equal the m
 (cd go && go test ./...)                     # Go: conformance and behaviour
 ```
 
-Test names carry the property they check:
+Test names carry the property they check: Rust tests start with `g1_` to `g11_`, Go tests with `TestG01` to
+`TestG11`, and the registry tests with `registry_` and `TestRegistry`.
 
 | Prefix | Property |
 |---|---|
@@ -57,7 +58,11 @@ Test names carry the property they check:
 
 Each property has a violating case beside its good case: a control input that the check refuses, or a fault whose
 effect the test counts. The Rust test `g4_valkey_live` runs against a Valkey server when `ECD_ID_VALKEY` names its
-address (`127.0.0.1:6399`); without it, the stream rows check the arithmetic against Valkey's documented append rule.
+address (`127.0.0.1:6399`); without it, the stream tests check the arithmetic against Valkey's documented append
+rule.
+
+Version 1 does not check directory names on a case-folding file system (NTFS, APFS); the `g11` tests assert instead
+that every canonical text and every embedding is one case, so no two of them can fold together.
 
 ## Status
 
