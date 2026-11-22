@@ -91,14 +91,16 @@ impl PidSource for ThreadPid {
     }
 }
 
-fn fork(parent: &Minter, child_pid: u32, n: usize) -> (Vec<Result<Id, Refusal>>, Minter) {
+/// Runs a copy of `parent` on its own thread with pid `child_pid`: `n` mints, then a switch to a fresh lease.
+fn fork(parent: &Minter, child_pid: u32, n: usize) -> (Vec<Result<Id, Refusal>>, Result<(), Refusal>) {
     let child = parent.clone();
     let h = thread::spawn(move || {
         PID.with(|p| p.set(child_pid));
         let mut c = child;
         let evt = Code::parse("evt").unwrap();
         let out = (0..n).map(|_| c.mint(evt)).collect::<Vec<_>>();
-        (out, c)
+        let next = Lease::new(Code::parse("emq").unwrap(), 9, T0, T0 + LEASE_TERM_MAX).unwrap();
+        (out, c.switch(next))
     });
     h.join().unwrap()
 }
@@ -115,10 +117,9 @@ fn g7_forked_child_cannot_mint_on_the_parent_lease() {
     let mut parent = parent_minter(clock.clone());
     let evt = Code::parse("evt").unwrap();
     parent.mint(evt).unwrap();
-    let (child, mut child_minter) = fork(&parent, 101, 5);
+    let (child, switched) = fork(&parent, 101, 5);
     assert!(child.iter().all(|r| *r == Err(Refusal::Fork)));
-    let next = Lease::new(emq(), 9, T0, T0 + LEASE_TERM_MAX).unwrap();
-    assert_eq!(child_minter.switch(next), Err(Refusal::Fork));
+    assert_eq!(switched, Err(Refusal::Fork));
     assert!(parent.mint(evt).is_ok());
     println!("G7 pid guard: the forked child's 5 mints and its switch are refused; the parent mints on");
 }

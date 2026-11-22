@@ -101,11 +101,11 @@ fn g4_valkey_live() {
     };
     let mut c = Conn::open(&addr);
     let server = match c.cmd(&["INFO", "server"]) {
-        Reply::Bulk(Some(b)) => String::from_utf8_lossy(&b)
-            .lines()
-            .find(|l| l.starts_with("valkey_version:") || l.starts_with("redis_version:"))
-            .unwrap_or("version unknown")
-            .to_owned(),
+        Reply::Bulk(Some(b)) => {
+            let info = String::from_utf8_lossy(&b).into_owned();
+            let pick = |key: &str| info.lines().find(|l| l.starts_with(key)).map(str::to_owned);
+            pick("valkey_version:").or_else(|| pick("redis_version:")).unwrap_or_else(|| "version unknown".to_owned())
+        }
         other => format!("{other:?}"),
     };
     for k in ["ecdid:g4", "ecdid:g4:legacy", "ecdid:g4:race"] {
