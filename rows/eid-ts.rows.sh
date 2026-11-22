@@ -80,14 +80,12 @@ TSC=""
 if command -v tsc >/dev/null 2>&1; then
 	TSC="tsc"
 else
-	for d in /usr/local/lib/node_modules /usr/lib/node_modules /root/.bun/install/global/node_modules /opt /w/node_modules /w/ts/node_modules /app /usr/src; do
-		[ -d "$d" ] || continue
-		j=$(find "$d" -maxdepth 6 -path '*typescript/lib/tsc.js' 2>/dev/null | head -1)
-		if [ -n "$j" ]; then
-			if command -v node >/dev/null 2>&1; then TSC="node $j"; else TSC="bun $j"; fi
-			break
-		fi
-	done
+	# any typescript/lib/tsc.js the image carries: global installs, a bun cache, a node_modules of the tree
+	j=$(find / -xdev \( -path /proc -o -path /sys -o -path /dev \) -prune -o -path '*typescript/lib/tsc.js' -print 2>/dev/null | head -1)
+	echo "PROBE typescript search: ${j:-none}"
+	if [ -n "$j" ]; then
+		if command -v node >/dev/null 2>&1; then TSC="node $j"; else TSC="bun $j"; fi
+	fi
 fi
 if [ -z "$TSC" ]; then
 	row eid-ts-typecheck COULD-NOT-MEASURE "no tsc and no typescript/lib/tsc.js in the image, and the run has no network; bun test strips types and does not check them"
