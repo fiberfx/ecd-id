@@ -93,6 +93,8 @@ func genCLI() string {
 	mintRow("mint-other-kind", "emq", "evt", 2, emqLease)
 	mintRow("mint-kan-doc", "kan", "doc", 2, kanLease)
 	mintRow("mint-detached-lease", "3ab", "run", 2, detLease)
+	// A detached system has no registry rows: a kind that no row names mints (spec/registry.md#lease-free).
+	mintRow("mint-detached-kind-unregistered", "3ab", "zzz", 2, detLease)
 	out.WriteString(cliRow("mint-default-count", "mint emq job --lease "+emqLease, 0, minted(emqLease, "job", 1), ""))
 
 	refused := func(name, args, why string) {
@@ -106,6 +108,7 @@ func genCLI() string {
 	refused("mint-kind-upper", "mint emq JOB --lease "+emqLease, "kind")
 	refused("mint-kind-short", "mint emq jo --lease "+emqLease, "kind")
 	refused("mint-kind-digit", "mint emq j2b --lease "+emqLease, "kind")
+	refused("mint-detached-kind-digit", "mint 3ab j2b --lease "+detLease, "kind")
 	refused("mint-system-reserved", "mint 2ab job --lease 2ab:5:4102444800000:4102531200000", "system-reserved")
 	for _, c := range []struct{ name, lease string }{
 		{"mint-lease-syntax", "emq:05:1:2"},

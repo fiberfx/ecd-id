@@ -165,6 +165,8 @@ is drawn again at every process start.
   same millisecond at the same count. The chance that two given processes share code and writer is 2^-42.3; it is
   2^-30 for two copies of one state directory.
 - If the random source fails, the minter returns an error. There is no fallback to a process id or a time.
+- A detached id is checked by kind only: it has no registry rows, and the registry is not consulted for it
+  ([registry.md](registry.md#lease-free)).
 
 <a id="door"></a>
 
@@ -176,7 +178,7 @@ its own minter. It checks in this order:
 
 | Check | Result |
 |---|---|
-| The id's kind is one the door accepts | otherwise refused, `kind` |
+| The id's kind is one the door accepts (a detached id's kind is compared by name, [registry.md](registry.md#lease-free)) | otherwise refused, `kind` |
 | The id is **detached** | never stored as the system's own fact. The door mints its own id of that kind and binds the detached id to it as a command token. Admitting the same detached id again returns the same bound id, so a retry does not create a second record. |
 | The id's system is the door's system | otherwise refused, `foreign` |
 | The id's time is at most `limit` milliseconds ahead of the door's clock | otherwise refused, `ahead` |

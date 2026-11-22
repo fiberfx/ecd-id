@@ -38,6 +38,17 @@ system  kind  role  state  served_by  meaning
 `correlation` and `request`; the format's `sys` has the role `system`. A typed field checks the role, so a `command` id
 cannot stand where a `run` is expected.
 
+<a id="lease-free"></a>
+
+## Lease-free ids are checked by kind only
+
+- A detached id (first character `3`–`7`, [id.md](id.md#system-classes)) has no registry rows.
+- Its kind must be three letters `a`–`z`, refused with `kind` otherwise. Where a kind is expected, its kind name is
+  compared with the expected kinds.
+- The registry is not consulted for it, and no role is checked.
+- The check of the system and of the (system, kind) row against the registry, and a typed field's role check
+  ([Roles](#roles)), apply to ids of registered-class systems.
+
 ## Classes and retirement
 
 - The class of a system is read from its code's first character ([id.md](id.md#system-classes)), not from the file.

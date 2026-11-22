@@ -22,7 +22,7 @@ emq_job_23obzcbapvupu2272222      system emq, kind job, 2026-11-21T14:30:00.123Z
 | [spec/id.md](spec/id.md) | Binary layout, alphabet, canonical text, strict parse and its refusals |
 | [spec/stream.md](spec/stream.md) | The Valkey stream-id mapping and its inverse |
 | [spec/lease.md](spec/lease.md) | Leases, writer numbers, the allocator, the minter, the pid guard, detached minting and the door |
-| [spec/registry.md](spec/registry.md) | The systems and kinds files, roles, classes and retirement |
+| [spec/registry.md](spec/registry.md) | The systems and kinds files, roles, classes, retirement and the kind-only check of lease-free ids |
 | [spec/mxdb.md](spec/mxdb.md) | mxdb's store, database and owner identities; the lineage |
 | [spec/cli.md](spec/cli.md) | The command `eid`: parse, validate and mint from a shell, from a store or from a lease |
 | `registry/` | `systems.tsv` and `kinds.tsv` |
@@ -45,7 +45,7 @@ sh rows/eid.rows.sh                          # every gate as one row, each with 
 `(cd model && go run .)` regenerates `vectors/`.
 
 Test names carry the property they check: Rust tests start with `g1_` to `g11_`, Go tests with `TestG01` to
-`TestG13`, and the registry tests with `registry_` and `TestRegistry`; `g12` and `g13` exist in Go only.
+`TestG13`, and the registry tests with `registry_` and `TestRegistry` (they include the kind-only check of detached ids); `g12` and `g13` exist in Go only.
 
 | Prefix | Property |
 |---|---|

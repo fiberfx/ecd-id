@@ -82,7 +82,7 @@ The parse runs on bytes, in this order. Each step refuses with its own reason; n
 | 5 | The reserved bits are zero. | `reserved` |
 | 6 | The system's first character is not `2`. | `system-reserved` |
 | 7 | The kind is three letters. | `kind` |
-| 8 | Where a field declares a role, the role's own check runs ([registry.md](registry.md#roles)). | the caller's |
+| 8 | Where a field declares a role, the role's own check runs ([registry.md](registry.md#roles)); a detached id is checked by kind only ([registry.md](registry.md#lease-free)). | the caller's |
 
 - Steps 1–7 need no registry. Binary ingress runs steps 5–7 on the 16 bytes, after checking that there are exactly 16
   (`length`).

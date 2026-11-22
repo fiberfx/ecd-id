@@ -47,7 +47,8 @@ The reasons are those of [id.md](id.md#strict-parse) for `parse` and `valid`, an
 | A store: the allocator's start and grant ([lease.md](lease.md#allocator)) | `not-home`, `active`, `clock-behind`, `contended`, `second-full` |
 | The lease is still open at the clock | `lease-ended` |
 
-A detached system has no registry rows, so a lease of a detached system mints any kind.
+A detached system has no registry rows, so a lease of a detached system mints any kind of three letters `a`–`z`
+([registry.md](registry.md#lease-free)).
 
 ## Minting from a store
 
