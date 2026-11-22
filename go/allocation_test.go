@@ -259,12 +259,12 @@ func TestG07_CopyUnderAnotherHomeIsRefused(t *testing.T) {
 		t.Fatalf("other home: %v", err)
 	}
 	if _, err := StartAllocator(reg, MustCode("brd"), "h1", NewMemoryStore(), clock, 1); err != ErrState {
-		t.Fatalf("closed: %v", err)
+		t.Fatalf("retired: %v", err)
 	}
 	if _, err := StartAllocator(reg, MustCode("3ab"), "h1", NewMemoryStore(), clock, 1); err != ErrClass {
 		t.Fatalf("detached: %v", err)
 	}
-	fmt.Println("G7: a copy of the store started under another home is refused; a closed system and a detached code too")
+	fmt.Println("G7: a copy of the store started under another home is refused; a retired system and a detached code too")
 }
 
 func TestG07_SecondActivationIsRefused(t *testing.T) {

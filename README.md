@@ -13,7 +13,7 @@ emq_job_23obzcbapvupu2272222      system emq, kind job, 2026-11-21T14:30:00.123Z
 - **Strict.** One case, one spelling, fixed length, no aliases; every refusal has a named reason.
 - **Stream ids.** Each id maps to a Valkey stream entry id `<ms>-<system<<48 | writer<<18 | count>`, unique across
   systems that share a stream, and back again given the stream's kind.
-- **brd14 kept.** Every brd14 id maps to one id of the system `brd`, without loss and in the same order.
+- **Retired code.** The code `brd` is retired: its row stays in the registry, and nothing mints under it.
 
 ## Layout
 
@@ -23,7 +23,6 @@ emq_job_23obzcbapvupu2272222      system emq, kind job, 2026-11-21T14:30:00.123Z
 | [spec/stream.md](spec/stream.md) | The Valkey stream-id mapping and its inverse |
 | [spec/lease.md](spec/lease.md) | Leases, writer numbers, the allocator, the minter, the pid guard, detached minting and the door |
 | [spec/registry.md](spec/registry.md) | The systems and kinds files, roles, classes and retirement |
-| [spec/embed.md](spec/embed.md) | brd14 ids under the system `brd` |
 | [spec/mxdb.md](spec/mxdb.md) | mxdb's store, database and owner identities; the lineage |
 | `registry/` | `systems.tsv` and `kinds.tsv` |
 | `model/` | The reference model (`ecdid.go`), the vector generator (`vectors.go`) and the seeded random source of the generated vectors (`mt.go`): a Go module of its own, standard library only, independent of `go/`; `fixtures/` holds the inputs it reads |
@@ -53,7 +52,6 @@ Test names carry the property they check: Rust tests start with `g1_` to `g11_`,
 | `g5` | Restart: an allocator restarted many times, some inside one second, never reissues a live writer |
 | `g6` | Clock set back and store restored: no repeat with a correct clock; repeats counted when both faults meet |
 | `g7` | Fenced clone and the pid guard |
-| `g8` | brd14 embedding: frozen vectors and a KAN document corpus, distinct, ordered, reversible |
 | `g9` | mxdb identities |
 | `g10` | The door: detached ids bound as command tokens, never stored as the system's own |
 | `g11` | One-case text |
@@ -64,7 +62,11 @@ address (`127.0.0.1:6399`); without it, the stream tests check the arithmetic ag
 rule.
 
 Version 1 does not check directory names on a case-folding file system (NTFS, APFS); the `g11` tests assert instead
-that every canonical text and every embedding is one case, so no two of them can fold together.
+that every canonical text in the vectors is one case, so no two of them can fold together.
+
+On APFS, measured on 22 Nov 2026: creating one directory for each of 2,428 mixed-case KAN document ids made 2,355
+directories, because ids that differ only by letter case name one directory; creating one for each of the 2,428
+corresponding Ecd ids made 2,428. NTFS is not measured.
 
 ## Status
 

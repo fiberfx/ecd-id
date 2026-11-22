@@ -13,17 +13,14 @@ import (
 )
 
 const (
-	alphabet        = "234567abcdefghijklmnopqrstuvwxyz"
-	textLen         = 28
-	timeMax         = 1<<48 - 1
-	writerMax       = 1<<30 - 1
-	countLimit      = 1 << 18
-	leaseTermMax    = 86_400_000
-	secondSlots     = 1 << 17
-	indexSlots      = 1 << 13
-	brd14Epoch      = 1_704_067_200_000
-	brd14Alphabet   = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-	brd14MaxPayload = "AzL8n0Y58m7"
+	alphabet     = "234567abcdefghijklmnopqrstuvwxyz"
+	textLen      = 28
+	timeMax      = 1<<48 - 1
+	writerMax    = 1<<30 - 1
+	countLimit   = 1 << 18
+	leaseTermMax = 86_400_000
+	secondSlots  = 1 << 17
+	indexSlots   = 1 << 13
 )
 
 // Refused is a refusal with its named reason.
@@ -89,10 +86,8 @@ func codeText(v uint64) string {
 	return string([]byte{alphabet[(v>>10)&31], alphabet[(v>>5)&31], alphabet[v&31]})
 }
 
-var (
-	brdSystem = mustCode("brd") // the system that holds brd14 embeddings
-	sysKind   = mustCode("sys") // the kind of a system's own id
-)
+// sysKind is the kind of a system's own id.
+var sysKind = mustCode("sys")
 
 func systemClass(system uint64) string {
 	first := system >> 10
@@ -379,56 +374,4 @@ func (m *minter) switchTo(l lease) error {
 	}
 	m.writer, m.notBefore, m.notAfter = l.writer, nb, l.notAfter
 	return nil
-}
-
-// ---- brd14 embedding under the system brd
-
-func brd14Decode(t []byte) (ns string, snow uint64, err error) {
-	if len(t) != 14 {
-		return "", 0, refuse("brd14-length")
-	}
-	for _, c := range t[:3] {
-		if c < 0x41 || c > 0x5A {
-			return "", 0, refuse("brd14-namespace")
-		}
-	}
-	payload := string(t[3:])
-	for i := 0; i < len(payload); i++ {
-		if strings.IndexByte(brd14Alphabet, payload[i]) < 0 {
-			return "", 0, refuse("brd14-charset")
-		}
-	}
-	if payload > brd14MaxPayload {
-		return "", 0, refuse("brd14-range")
-	}
-	for i := 0; i < len(payload); i++ {
-		snow = snow*62 + uint64(strings.IndexByte(brd14Alphabet, payload[i]))
-	}
-	return string(t[:3]), snow, nil
-}
-
-func brd14Encode(ns string, snow uint64) string {
-	digits := make([]byte, 11)
-	for i := len(digits) - 1; i >= 0; i-- {
-		digits[i] = brd14Alphabet[snow%62]
-		snow /= 62
-	}
-	return ns + string(digits)
-}
-
-func embed(t []byte) ([]byte, error) {
-	ns, snow, err := brd14Decode(t)
-	if err != nil {
-		return nil, err
-	}
-	return pack(brdSystem, mustCode(strings.ToLower(ns)), (snow>>22)+brd14Epoch, (snow>>12)&1023, snow&4095), nil
-}
-
-func unembed(b []byte) (string, error) {
-	f := fields(b)
-	t := int64(f.time) - brd14Epoch
-	if f.system != brdSystem || t < 0 || t >= 1<<41 || f.writer >= 1024 || f.count >= 4096 {
-		return "", refuse("not-embedding")
-	}
-	return brd14Encode(strings.ToUpper(codeText(f.kind)), uint64(t)<<22|f.writer<<12|f.count), nil
 }

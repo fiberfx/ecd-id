@@ -64,5 +64,5 @@ are the numbers. Generating per-language kind constants from these files is out 
 
 ## The system `brd`
 
-`brd` is a registered system with no home and state `closed`: an id enters it only as the embedding of a brd14 id
-([embed.md](embed.md)). Its kinds are the brd14 brands as they stand, ambiguities included.
+`brd` is a registered system with no home and state `retired`. Its row and its kinds stay in the files, its ids stay
+valid and readable, and nothing mints under it; the code is never reassigned.

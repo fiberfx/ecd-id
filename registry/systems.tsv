@@ -2,7 +2,7 @@
 # code: three alphabet characters, the first a letter. state: live, closed (read only, nothing mints) or retired.
 # home: the one supervisor that may start the allocator ("-" while none is assigned). served_by: "-" or a code.
 code	name	owner	home	state	served_by
-brd	brd14 embeddings	-	-	closed	-
+brd	brd14 embeddings	-	-	retired	-
 ecd	ecd-core daemon	-	-	live	-
 emq	EchoMQ	-	-	live	-
 fvx	fv supervisor	-	-	live	-

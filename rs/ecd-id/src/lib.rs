@@ -10,7 +10,6 @@
 #![forbid(unsafe_code)]
 
 mod door;
-mod embed;
 mod id;
 mod lease;
 mod mint;
@@ -20,7 +19,6 @@ mod stream;
 use std::fmt;
 
 pub use door::{Admission, DEFAULT_AHEAD_MS, Door};
-pub use embed::{BRD, BRD14_EPOCH, brd14_decode, brd14_encode, embed, unembed};
 pub use id::{ALPHABET, COUNT_LIMIT, Class, Code, Id, SYS, TEXT_LEN, TIME_MAX, WRITER_MAX, code};
 pub use lease::{
     Allocator, Clock, INDEX_SLOTS, LEASE_TERM_MAX, Lease, LeaseStore, ManualClock, MemoryStore, SECOND_SLOTS,
@@ -67,16 +65,6 @@ pub enum Refusal {
     Fork,
     /// The random source failed.
     Random,
-    /// brd14: the input is not 14 bytes.
-    Brd14Length,
-    /// brd14: the namespace is not three letters `A`–`Z`.
-    Brd14Namespace,
-    /// brd14: a payload byte is not a Base62 digit.
-    Brd14Charset,
-    /// brd14: the payload is 2^63 or more.
-    Brd14Range,
-    /// The id is not the embedding of a brd14 id.
-    NotEmbedding,
     /// The allocator has just started in the second of the stored grant: it waits for the next second.
     Wait,
     /// The clock is behind the stored grant second.
@@ -128,11 +116,6 @@ impl Refusal {
             Refusal::LeaseEnded => "lease-ended",
             Refusal::Fork => "fork",
             Refusal::Random => "random",
-            Refusal::Brd14Length => "brd14-length",
-            Refusal::Brd14Namespace => "brd14-namespace",
-            Refusal::Brd14Charset => "brd14-charset",
-            Refusal::Brd14Range => "brd14-range",
-            Refusal::NotEmbedding => "not-embedding",
             Refusal::Wait => "wait",
             Refusal::ClockBehind => "clock-behind",
             Refusal::SecondFull => "second-full",

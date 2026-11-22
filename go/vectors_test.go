@@ -3,7 +3,6 @@ package ecdid
 import (
 	"encoding/hex"
 	"fmt"
-	"sort"
 	"strconv"
 	"strings"
 	"testing"
@@ -195,101 +194,6 @@ func TestG04_StreamInvalidRefused(t *testing.T) {
 	fmt.Printf("G4 stream invalid: %d refused\n", len(rows))
 }
 
-type textID struct {
-	text string
-	id   ID
-}
-
-func checkOrderAndDistinct(t *testing.T, pairs []textID) {
-	t.Helper()
-	byText := append([]textID(nil), pairs...)
-	sort.Slice(byText, func(i, j int) bool { return byText[i].text < byText[j].text })
-	byID := append([]textID(nil), byText...)
-	sort.Slice(byID, func(i, j int) bool { return byID[i].id.Compare(byID[j].id) < 0 })
-	ids := map[ID]bool{}
-	for i := range byText {
-		if byText[i].text != byID[i].text {
-			t.Fatalf("order differs at %d: %s vs %s", i, byText[i].text, byID[i].text)
-		}
-		ids[byText[i].id] = true
-	}
-	if len(ids) != len(byText) {
-		t.Fatalf("two brd14 texts share an embedding")
-	}
-}
-
-func TestG08_Brd14VectorsEmbedReturnKeepOrder(t *testing.T) {
-	rows := tsv(t, "embed_brd14.tsv")
-	var pairs []textID
-	for _, r := range rows {
-		id, err := Embed([]byte(r[0]))
-		if err != nil || id.String() != r[2] {
-			t.Fatalf("embedding of %s: %v %s", r[0], err, id)
-		}
-		back, err := Unembed(id)
-		if err != nil || back != r[0] {
-			t.Fatalf("unembed of %s: %v %s", r[0], err, back)
-		}
-		_, snow, _ := Brd14Decode([]byte(r[0]))
-		if strconv.FormatUint(snow, 10) != r[1] {
-			t.Fatalf("snow of %s", r[0])
-		}
-		pairs = append(pairs, textID{r[0], id})
-	}
-	checkOrderAndDistinct(t, pairs)
-	fmt.Printf("G8 brd14 vectors: %d embed, return and keep their order\n", len(rows))
-}
-
-func TestG08_KanCorpusDistinctOrderedWithCasePairs(t *testing.T) {
-	rows := tsv(t, "embed_kan.tsv")
-	var pairs []textID
-	folded := map[string]int{}
-	for _, r := range rows {
-		id, err := Embed([]byte(r[0]))
-		if err != nil || id.String() != r[1] {
-			t.Fatalf("embedding of %s: %v", r[0], err)
-		}
-		if back, err := Unembed(id); err != nil || back != r[0] {
-			t.Fatalf("unembed of %s", r[0])
-		}
-		pairs = append(pairs, textID{r[0], id})
-		folded[strings.ToLower(r[0])]++
-	}
-	checkOrderAndDistinct(t, pairs)
-	groups, caseIDs := 0, map[ID]bool{}
-	members := 0
-	for _, n := range folded {
-		if n > 1 {
-			groups++
-		}
-	}
-	for _, p := range pairs {
-		if folded[strings.ToLower(p.text)] > 1 {
-			caseIDs[p.id] = true
-			members++
-		}
-	}
-	if groups == 0 || len(caseIDs) != members {
-		t.Fatalf("case groups %d, distinct %d of %d", groups, len(caseIDs), members)
-	}
-	fmt.Printf("G8 KAN corpus: %d ids embed, distinct, in order, reversible; %d case groups (%d ids) embed as distinct values\n", len(pairs), groups, members)
-}
-
-func TestG08_MalformedBrd14Refused(t *testing.T) {
-	rows := tsv(t, "embed_invalid.tsv")
-	for _, r := range rows {
-		_, err := Embed(unhex(t, r[0]))
-		if reason(err) != r[1] {
-			t.Fatalf("input %s: got %s want %s", r[0], reason(err), r[1])
-		}
-	}
-	id, _ := ParseString("emq_job_23obzcbapvupu2272222")
-	if _, err := Unembed(id); err != ErrNotEmbedding {
-		t.Fatalf("unembed of a non-embedding: %v", err)
-	}
-	fmt.Printf("G8 invalid: %d malformed brd14 texts refused with brd14's class\n", len(rows))
-}
-
 func TestG09_MxdbIdentities(t *testing.T) {
 	n := 0
 	kinds := map[string]string{"owner": "sys", "store": "sto", "database": "dbs", "transaction": "txn"}
@@ -344,12 +248,6 @@ func TestG11_CanonicalTextIsOneCase(t *testing.T) {
 	for _, r := range tsv(t, "valid.tsv") {
 		texts = append(texts, r[0])
 	}
-	for _, r := range tsv(t, "embed_kan.tsv") {
-		texts = append(texts, r[1])
-	}
-	for _, r := range tsv(t, "embed_brd14.tsv") {
-		texts = append(texts, r[2])
-	}
 	exact, folded := map[string]bool{}, map[string]bool{}
 	for _, s := range texts {
 		if strings.ToLower(s) != s {
@@ -369,7 +267,7 @@ func TestG11_CanonicalTextIsOneCase(t *testing.T) {
 func TestRegistryFilesLoad(t *testing.T) {
 	reg := repoRegistry(t)
 	brd, _ := reg.System(MustCode("brd"))
-	if brd.State != Closed || len(reg.KindsOf(MustCode("emq"))) < 5 || len(reg.KindsOf(MustCode("brd"))) < 36 {
+	if brd.State != Retired || len(reg.KindsOf(MustCode("emq"))) < 5 || len(reg.KindsOf(MustCode("brd"))) < 36 {
 		t.Fatal("registry content")
 	}
 	fmt.Printf("registry: %d systems load\n", len(reg.Systems()))

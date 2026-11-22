@@ -1,5 +1,5 @@
 //! Conformance against vectors/: the text and the bytes both ways, every refusal and its reason, leases, minting,
-//! stream ids, the brd14 embedding and mxdb's identities.
+//! stream ids and mxdb's identities.
 
 mod common;
 
@@ -8,8 +8,7 @@ use std::sync::Arc;
 
 use common::{hex, repo_registry, tsv, unhex};
 use ecd_id::{
-    ALPHABET, Class, Code, Id, Lease, ManualClock, ManualPid, Minter, Refusal, StreamId, embed, from_stream, unembed,
-    writer_for,
+    ALPHABET, Class, Code, Id, Lease, ManualClock, ManualPid, Minter, Refusal, StreamId, from_stream, writer_for,
 };
 
 fn class_name(c: Class) -> &'static str {
@@ -179,75 +178,6 @@ fn g4_stream_invalid_refused() {
 }
 
 #[test]
-fn g8_brd14_vectors_embed_return_and_keep_order() {
-    let rows = tsv("embed_brd14.tsv");
-    let mut pairs = Vec::new();
-    for r in &rows {
-        let id = embed(r[0].as_bytes()).unwrap_or_else(|e| panic!("{}: {e}", r[0]));
-        assert_eq!(id.to_string(), r[2], "embedding of {}", r[0]);
-        assert_eq!(unembed(id).unwrap(), r[0]);
-        let (_, snow) = ecd_id::brd14_decode(r[0].as_bytes()).unwrap();
-        assert_eq!(snow.to_string(), r[1]);
-        pairs.push((r[0].clone(), id));
-    }
-    check_order_and_distinct(&pairs);
-    println!("G8 brd14 vectors: {} embed, return and keep their order", rows.len());
-}
-
-fn check_order_and_distinct(pairs: &[(String, Id)]) {
-    let mut by_text = pairs.to_vec();
-    by_text.sort_by(|a, b| a.0.as_bytes().cmp(b.0.as_bytes()));
-    by_text.dedup_by(|a, b| a.0 == b.0);
-    let mut by_id = by_text.clone();
-    by_id.sort_by_key(|p| p.1);
-    assert!(by_text.iter().zip(&by_id).all(|(a, b)| a.0 == b.0), "order differs");
-    let ids: HashSet<Id> = by_text.iter().map(|p| p.1).collect();
-    assert_eq!(ids.len(), by_text.len(), "two brd14 texts share an embedding");
-}
-
-#[test]
-fn g8_kan_corpus_embeds_distinct_in_order_with_case_pairs() {
-    let rows = tsv("embed_kan.tsv");
-    let mut pairs = Vec::new();
-    for r in &rows {
-        let id = embed(r[0].as_bytes()).unwrap();
-        assert_eq!(id.to_string(), r[1]);
-        assert_eq!(unembed(id).unwrap(), r[0]);
-        pairs.push((r[0].clone(), id));
-    }
-    check_order_and_distinct(&pairs);
-    let mut folded = std::collections::HashMap::<String, usize>::new();
-    for (t, _) in &pairs {
-        *folded.entry(t.to_ascii_lowercase()).or_default() += 1;
-    }
-    let case_groups = folded.values().filter(|&&n| n > 1).count();
-    let case_ids: Vec<&(String, Id)> = pairs.iter().filter(|(t, _)| folded[&t.to_ascii_lowercase()] > 1).collect();
-    let distinct: HashSet<Id> = case_ids.iter().map(|p| p.1).collect();
-    assert!(case_groups > 0);
-    assert_eq!(distinct.len(), case_ids.len());
-    println!(
-        "G8 KAN corpus: {} ids embed, distinct, in order, reversible; {} case groups ({} ids) embed as distinct values",
-        pairs.len(),
-        case_groups,
-        case_ids.len()
-    );
-}
-
-#[test]
-fn g8_malformed_brd14_refused_before_embedding() {
-    let rows = tsv("embed_invalid.tsv");
-    for r in &rows {
-        match embed(&unhex(&r[0])) {
-            Ok(id) => panic!("{} embedded as {id}", r[0]),
-            Err(e) => assert_eq!(e.reason(), r[1], "input {}", r[0]),
-        }
-    }
-    let not = Id::parse(b"emq_job_23obzcbapvupu2272222").unwrap();
-    assert_eq!(unembed(not), Err(Refusal::NotEmbedding));
-    println!("G8 invalid: {} malformed brd14 texts refused with brd14's class", rows.len());
-}
-
-#[test]
 fn g9_mxdb_identities() {
     let mut n = 0;
     for r in tsv("mxdb.tsv") {
@@ -298,12 +228,6 @@ fn g11_canonical_text_is_one_case() {
     for r in tsv("valid.tsv") {
         texts.push(r[0].clone());
     }
-    for r in tsv("embed_kan.tsv") {
-        texts.push(r[1].clone());
-    }
-    for r in tsv("embed_brd14.tsv") {
-        texts.push(r[2].clone());
-    }
     assert!(texts.iter().all(|t| !t.bytes().any(|c| c.is_ascii_uppercase())));
     let exact: HashSet<&String> = texts.iter().collect();
     let folded: HashSet<String> = texts.iter().map(|t| t.to_ascii_lowercase()).collect();
@@ -317,7 +241,7 @@ fn g11_canonical_text_is_one_case() {
 fn registry_files_load() {
     let reg = repo_registry();
     let brd = Code::parse("brd").unwrap();
-    assert_eq!(reg.system(brd).unwrap().state, ecd_id::State::Closed);
+    assert_eq!(reg.system(brd).unwrap().state, ecd_id::State::Retired);
     assert!(reg.kinds_of(Code::parse("emq").unwrap()).count() >= 5);
     assert!(reg.kinds_of(brd).count() >= 36);
     println!("registry: {} systems load", reg.systems().count());

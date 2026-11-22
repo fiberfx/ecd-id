@@ -61,7 +61,7 @@ pub fn homed_registry() -> Registry {
         "code\tname\towner\thome\tstate\tserved_by\n\
          emq\tEchoMQ\t-\th1\tlive\t-\n\
          kan\tKAN\t-\th1\tlive\t-\n\
-         brd\tbrd14\t-\t-\tclosed\t-\n",
+         brd\tretired\t-\t-\tretired\t-\n",
         "system\tkind\trole\tstate\tserved_by\tmeaning\n\
          emq\tevt\tstream\tlive\t-\tevent\n\
          emq\tjob\tcommand\tlive\t-\tjob\n\

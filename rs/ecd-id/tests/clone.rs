@@ -29,11 +29,11 @@ fn g7_copy_under_another_home_is_refused() {
     let refused = Allocator::start(&reg, emq(), "h2", copy, clock.clone(), 1).err();
     assert_eq!(refused, Some(Refusal::NotHome));
     let brd = Code::parse("brd").unwrap();
-    let closed = Allocator::start(&reg, brd, "h1", Arc::new(MemoryStore::new()), clock.clone(), 1).err();
-    assert_eq!(closed, Some(Refusal::State));
+    let retired = Allocator::start(&reg, brd, "h1", Arc::new(MemoryStore::new()), clock.clone(), 1).err();
+    assert_eq!(retired, Some(Refusal::State));
     let detached = Allocator::start(&reg, Code::parse("3ab").unwrap(), "h1", Arc::new(MemoryStore::new()), clock, 1).err();
     assert_eq!(detached, Some(Refusal::Class));
-    println!("G7: a copy of the store started under another home is refused; a closed system and a detached code too");
+    println!("G7: a copy of the store started under another home is refused; a retired system and a detached code too");
 }
 
 #[test]

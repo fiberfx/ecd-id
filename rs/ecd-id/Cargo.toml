@@ -1,6 +1,6 @@
 [package]
 name = "ecd-id"
-description = "The Ecd ID, version 1: codec, strict parse, leases, minter, stream-id mapping, brd14 embedding, registry and door"
+description = "The Ecd ID, version 1: codec, strict parse, leases, minter, stream-id mapping, registry and door"
 version.workspace = true
 edition.workspace = true
 publish.workspace = true
