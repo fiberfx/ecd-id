@@ -187,6 +187,8 @@ def writer_for(second, index):
 def _decimal(p):
     if not p or not p.isascii() or not p.isdigit() or (len(p) > 1 and p[0] == "0") or len(p) > 20:
         raise Refused("lease-syntax")
+    if int(p) >= 1 << 64:
+        raise Refused("lease-syntax")
     return int(p)
 
 
