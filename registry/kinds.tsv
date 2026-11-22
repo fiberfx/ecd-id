@@ -60,6 +60,7 @@ kan	agt	entity	live	-	registered principal
 kan	crs	entity	live	-	correspondence
 kan	doc	entity	live	-	document
 kan	evt	stream	live	-	event
+kan	ses	activation	live	-	session
 mxe	cor	correlation	live	-	correlation id
 mxe	req	request	live	-	request
 mxr	req	request	live	-	request
