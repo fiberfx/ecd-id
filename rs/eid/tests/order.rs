@@ -3,7 +3,7 @@
 mod common;
 
 use common::Mix;
-use ecd_id::{COUNT_LIMIT, Code, Id, TIME_MAX, WRITER_MAX};
+use eid::{COUNT_LIMIT, Code, Id, TIME_MAX, WRITER_MAX};
 
 const N: usize = 1_000_000;
 
@@ -47,7 +47,7 @@ fn encode_unsorted(id: Id) -> [u8; 28] {
     let mut out = sorted;
     for (i, c) in sorted.iter().enumerate() {
         if *c != b'_' {
-            let v = ecd_id::ALPHABET.iter().position(|a| a == c).unwrap();
+            let v = eid::ALPHABET.iter().position(|a| a == c).unwrap();
             out[i] = STD[v];
         }
     }

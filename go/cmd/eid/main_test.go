@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"ecdid"
+	"eid"
 )
 
 const (
@@ -62,13 +62,13 @@ func vectorArgs(r vectorRow) []string {
 }
 
 // testEnv is an environment with a manual clock whose sleep moves the clock, so a wait costs no time.
-func testEnv(clock *ecdid.ManualClock, vars map[string]string) env {
+func testEnv(clock *eid.ManualClock, vars map[string]string) env {
 	return env{
 		getenv:   func(k string) string { return vars[k] },
 		hostname: func() (string, error) { return "box.local", nil },
 		clock:    clock,
-		random:   ecdid.OsRandom{},
-		pids:     ecdid.NewManualPid(1),
+		random:   eid.OsRandom{},
+		pids:     eid.NewManualPid(1),
 		sleep:    func(d time.Duration) { clock.Advance(uint64(d / time.Millisecond)) },
 	}
 }
@@ -84,7 +84,7 @@ func mustRun(t *testing.T, e env, args ...string) string {
 
 func TestG13_VectorsThroughRun(t *testing.T) {
 	rows := cliVectors(t)
-	e := testEnv(ecdid.NewManualClock(now), map[string]string{"ECD_ID_REGISTRY": registryDir()})
+	e := testEnv(eid.NewManualClock(now), map[string]string{"EID_REGISTRY": registryDir()})
 	for _, r := range rows {
 		var out, errb bytes.Buffer
 		code := run(vectorArgs(r), e, &out, &errb)
@@ -96,16 +96,16 @@ func TestG13_VectorsThroughRun(t *testing.T) {
 	fmt.Printf("G13: %d command lines agree with vectors/cli.tsv: output, exit status and refusal\n", len(rows))
 }
 
-// The same rows against a built binary, when ECDID_BIN names one.
+// The same rows against a built binary, when EID_BIN names one.
 func TestG13_BinaryAgainstVectors(t *testing.T) {
-	bin := os.Getenv("ECDID_BIN")
+	bin := os.Getenv("EID_BIN")
 	if bin == "" {
-		t.Skip("ECDID_BIN names the binary to check")
+		t.Skip("EID_BIN names the binary to check")
 	}
 	rows := cliVectors(t)
 	for _, r := range rows {
 		cmd := exec.Command(bin, vectorArgs(r)...)
-		cmd.Env = append(os.Environ(), "ECD_ID_REGISTRY="+registryDir())
+		cmd.Env = append(os.Environ(), "EID_REGISTRY="+registryDir())
 		var out, errb bytes.Buffer
 		cmd.Stdout, cmd.Stderr = &out, &errb
 		code := 0
@@ -124,11 +124,11 @@ func TestG13_BinaryAgainstVectors(t *testing.T) {
 	fmt.Printf("G13 binary %s: %d command lines agree with vectors/cli.tsv\n", filepath.Base(bin), len(rows))
 }
 
-func idsOf(t *testing.T, out string) []ecdid.ID {
+func idsOf(t *testing.T, out string) []eid.ID {
 	t.Helper()
-	var ids []ecdid.ID
+	var ids []eid.ID
 	for _, l := range strings.Split(strings.TrimSuffix(out, "\n"), "\n") {
-		id, err := ecdid.ParseString(l)
+		id, err := eid.ParseString(l)
 		if err != nil {
 			t.Fatalf("%q: %v", l, err)
 		}
@@ -139,10 +139,10 @@ func idsOf(t *testing.T, out string) []ecdid.ID {
 
 func TestG13_MintFromAStoreTakesALeasePerCall(t *testing.T) {
 	store := t.TempDir()
-	clock := ecdid.NewManualClock(now)
-	e := testEnv(clock, map[string]string{"ECD_ID_REGISTRY": registryDir(), "ECD_ID_HOME": "m5"})
-	kan := ecdid.MustCode("kan")
-	var all []ecdid.ID
+	clock := eid.NewManualClock(now)
+	e := testEnv(clock, map[string]string{"EID_REGISTRY": registryDir(), "EID_HOME": "m5"})
+	kan := eid.MustCode("kan")
+	var all []eid.ID
 	writers := map[uint32]bool{}
 	for call := 0; call < 3; call++ {
 		ids := idsOf(t, mustRun(t, e, "mint", "kan", "doc", "-n", "50", "--store", store))
@@ -150,14 +150,14 @@ func TestG13_MintFromAStoreTakesALeasePerCall(t *testing.T) {
 			t.Fatalf("call %d: %d ids", call, len(ids))
 		}
 		for _, id := range ids {
-			if id.System() != kan || id.Kind() != ecdid.MustCode("doc") {
+			if id.System() != kan || id.Kind() != eid.MustCode("doc") {
 				t.Fatalf("call %d: %s", call, id)
 			}
 		}
 		writers[ids[0].Writer()] = true
 		all = append(all, ids...)
 	}
-	seen := map[ecdid.ID]bool{}
+	seen := map[eid.ID]bool{}
 	for i, id := range all {
 		if seen[id] || (i > 0 && id.Compare(all[i-1]) <= 0) {
 			t.Fatalf("id %d (%s) repeats or goes back", i, id)
@@ -173,8 +173,8 @@ func TestG13_MintFromAStoreTakesALeasePerCall(t *testing.T) {
 
 func TestG13_MintRefusals(t *testing.T) {
 	store := t.TempDir()
-	clock := ecdid.NewManualClock(now)
-	vars := map[string]string{"ECD_ID_REGISTRY": registryDir(), "ECD_ID_HOME": "m5"}
+	clock := eid.NewManualClock(now)
+	vars := map[string]string{"EID_REGISTRY": registryDir(), "EID_HOME": "m5"}
 	e := testEnv(clock, vars)
 	cases := []struct {
 		name, reason string
@@ -194,11 +194,11 @@ func TestG13_MintRefusals(t *testing.T) {
 		}
 	}
 	// A store whose activation another holder keeps refuses with `active` once the retries are spent.
-	holder, err := ecdid.OpenFileStore(store)
+	holder, err := eid.OpenFileStore(store)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !holder.Activate(ecdid.MustCode("kan")) {
+	if !holder.Activate(eid.MustCode("kan")) {
 		t.Fatal("holder activation")
 	}
 	var out, errb bytes.Buffer
@@ -206,17 +206,17 @@ func TestG13_MintRefusals(t *testing.T) {
 		errb.String() != "refused: active\n" {
 		t.Fatalf("held store: exit %d stderr %q", code, errb.String())
 	}
-	holder.Release(ecdid.MustCode("kan"))
+	holder.Release(eid.MustCode("kan"))
 	mustRun(t, e, "mint", "kan", "doc", "--store", store)
 	fmt.Printf("G13: %d refusals before or at the store, and `active` while another holder keeps the activation\n",
 		len(cases)+1)
 }
 
 func TestG13_DetachedMintsDetachedIDs(t *testing.T) {
-	e := testEnv(ecdid.NewManualClock(now), nil)
+	e := testEnv(eid.NewManualClock(now), nil)
 	ids := idsOf(t, mustRun(t, e, "detached", "evt", "-n", "20"))
 	for i, id := range ids {
-		if id.Class() != ecdid.Detached || id.Kind() != ecdid.MustCode("evt") || id.System() != ids[0].System() ||
+		if id.Class() != eid.Detached || id.Kind() != eid.MustCode("evt") || id.System() != ids[0].System() ||
 			id.Writer() != ids[0].Writer() || (i > 0 && id.Compare(ids[i-1]) <= 0) {
 			t.Fatalf("id %d: %s", i, id)
 		}

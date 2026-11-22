@@ -7,7 +7,7 @@ use std::collections::HashSet;
 use std::sync::Arc;
 use std::thread;
 
-use ecd_id::{COUNT_LIMIT, Code, Id, Lease, ManualClock, ManualPid, Minter};
+use eid::{COUNT_LIMIT, Code, Id, Lease, ManualClock, ManualPid, Minter};
 
 const T: u64 = 1_795_271_400_123;
 const TOTAL: usize = 10_000_000;

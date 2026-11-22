@@ -23,7 +23,7 @@ still stamps inside its own window.
 
 `lease(system) → (system, writer, not_before, not_after)`.
 
-- **Text form**, for passing a lease to a process in its environment: `ECD_ID_LEASE=emq:895287301:1795271400000:1795357800000`,
+- **Text form**, for passing a lease to a process in its environment: `EID_LEASE=emq:895287301:1795271400000:1795357800000`,
   that is `system:writer:not_before:not_after` in decimal milliseconds. The parse is strict:
 
 | Check | Reason |

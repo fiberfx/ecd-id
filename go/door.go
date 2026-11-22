@@ -1,4 +1,4 @@
-package ecdid
+package eid
 
 // Admission is the result of admitting an id. When Own is true, ID is the system's own id and is stored as such.
 // When Own is false, Token was a detached id: the door minted ID and bound Token to it; Token is never stored as a

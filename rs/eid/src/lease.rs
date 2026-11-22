@@ -106,9 +106,9 @@ impl Lease {
         Lease::new(system, writer as u32, not_before, not_after)
     }
 
-    /// The lease passed in the environment variable `ECD_ID_LEASE`, if it is set.
+    /// The lease passed in the environment variable `EID_LEASE`, if it is set.
     pub fn from_env() -> Option<Result<Lease, Refusal>> {
-        std::env::var("ECD_ID_LEASE").ok().map(|v| Lease::parse(&v))
+        std::env::var("EID_LEASE").ok().map(|v| Lease::parse(&v))
     }
 }
 

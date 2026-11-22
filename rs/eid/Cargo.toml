@@ -1,5 +1,5 @@
 [package]
-name = "ecd-id"
+name = "eid"
 description = "The Ecd ID, version 1: codec, strict parse, leases, minter, stream-id mapping, registry and door"
 version.workspace = true
 edition.workspace = true

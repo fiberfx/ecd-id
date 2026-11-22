@@ -7,7 +7,7 @@ use std::collections::HashSet;
 use std::sync::Arc;
 
 use common::{Mix, homed_registry};
-use ecd_id::{Allocator, Code, Id, LEASE_TERM_MAX, Lease, LeaseStore, ManualClock, ManualPid, MemoryStore, Minter, Refusal};
+use eid::{Allocator, Code, Id, LEASE_TERM_MAX, Lease, LeaseStore, ManualClock, ManualPid, MemoryStore, Minter, Refusal};
 
 const T0: u64 = 1_795_271_400_000;
 

@@ -1,6 +1,6 @@
 //go:build linux || darwin || freebsd || netbsd || openbsd
 
-package ecdid
+package eid
 
 import (
 	"bytes"
@@ -135,11 +135,11 @@ func TestG12_FileStoreServesTheAllocatorAcrossRestarts(t *testing.T) {
 	fmt.Println("G12: an allocator restarted on the same directory waits for the next second and refuses a clock behind it")
 }
 
-// The helper process of the two-process tests. The parent starts it with ECDID_G12_HELPER=dir|mode|startAtMs|count:
+// The helper process of the two-process tests. The parent starts it with EID_G12_HELPER=dir|mode|startAtMs|count:
 // it waits for startAtMs, claims count grant seconds on the store by compare-and-set, and prints the writer number
 // of each claim.
 func TestG12_HelperProcess(t *testing.T) {
-	spec := os.Getenv("ECDID_G12_HELPER")
+	spec := os.Getenv("EID_G12_HELPER")
 	if spec == "" {
 		t.Skip("the helper process of the two-process tests")
 	}
@@ -175,7 +175,7 @@ func twoProcesses(t *testing.T, mode string, per int) (writers []uint32, stored 
 	var cmds [2]*exec.Cmd
 	for i := range cmds {
 		c := exec.Command(os.Args[0], "-test.run=^TestG12_HelperProcess$")
-		c.Env = append(os.Environ(), fmt.Sprintf("ECDID_G12_HELPER=%s|%s|%d|%d", dir, mode, startAt, per))
+		c.Env = append(os.Environ(), fmt.Sprintf("EID_G12_HELPER=%s|%s|%d|%d", dir, mode, startAt, per))
 		c.Stdout, c.Stderr = &outs[i], os.Stderr
 		if err := c.Start(); err != nil {
 			t.Fatal(err)

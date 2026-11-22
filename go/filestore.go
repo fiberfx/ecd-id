@@ -1,6 +1,6 @@
 //go:build linux || darwin || freebsd || netbsd || openbsd
 
-package ecdid
+package eid
 
 import (
 	"errors"
@@ -46,7 +46,7 @@ func OpenFileStore(dir string) (*FileStore, error) {
 		return nil, err
 	}
 	if !fi.IsDir() {
-		return nil, errors.New("ecdid: " + dir + " is not a directory")
+		return nil, errors.New("eid: " + dir + " is not a directory")
 	}
 	return &FileStore{dir: dir, active: map[Code]*os.File{}}, nil
 }
@@ -100,7 +100,7 @@ func (s *FileStore) lock() (func(), error) {
 	}, nil
 }
 
-var errCorruptRecord = errors.New("ecdid: the stored grant second is not a decimal number")
+var errCorruptRecord = errors.New("eid: the stored grant second is not a decimal number")
 
 func parseRecord(b []byte) (uint64, bool) {
 	t := strings.TrimSuffix(string(b), "\n")

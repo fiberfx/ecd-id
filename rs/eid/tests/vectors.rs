@@ -7,7 +7,7 @@ use std::collections::HashSet;
 use std::sync::Arc;
 
 use common::{hex, repo_registry, tsv, unhex};
-use ecd_id::{
+use eid::{
     ALPHABET, Class, Code, Id, Lease, ManualClock, ManualPid, Minter, Refusal, StreamId, from_stream, writer_for,
 };
 
@@ -215,7 +215,7 @@ fn g9_no_lease_mints_time_zero() {
     assert_eq!(Lease::new(emq, 5, 0, 1000), Err(Refusal::LeaseWindow));
     let clock = Arc::new(ManualClock::new(0));
     let mut m = Minter::new(Lease::new(emq, 5, 1, 1000).unwrap(), clock, Arc::new(ManualPid::new(1)));
-    let sys = m.mint(ecd_id::SYS).unwrap();
+    let sys = m.mint(eid::SYS).unwrap();
     assert_eq!(sys.time(), 1);
     assert_ne!(sys, Id::system_id(emq).unwrap());
     println!("G9: a lease starting at 0 is refused; a clock at 0 still stamps time 1, never the system's own id");
@@ -241,7 +241,7 @@ fn g11_canonical_text_is_one_case() {
 fn registry_files_load() {
     let reg = repo_registry();
     let brd = Code::parse("brd").unwrap();
-    assert_eq!(reg.system(brd).unwrap().state, ecd_id::State::Retired);
+    assert_eq!(reg.system(brd).unwrap().state, eid::State::Retired);
     assert!(reg.kinds_of(Code::parse("emq").unwrap()).count() >= 5);
     assert!(reg.kinds_of(brd).count() >= 36);
     println!("registry: {} systems load", reg.systems().count());
@@ -264,7 +264,7 @@ fn registry_refusals() {
         (format!("{s}emq\tx\t-\t-\tlive\t-\n"), format!("{k}emq\tjob\tthing\tlive\t-\td\n"), "registry-role"),
     ];
     for (sys, kinds, reason) in &cases {
-        let err = ecd_id::Registry::parse(sys, kinds).unwrap_err();
+        let err = eid::Registry::parse(sys, kinds).unwrap_err();
         assert_eq!(err.reason, *reason, "{sys:?} {kinds:?}");
     }
     println!("registry: {} faults refused", cases.len());

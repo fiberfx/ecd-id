@@ -4,7 +4,7 @@
 
 use std::path::PathBuf;
 
-use ecd_id::Registry;
+use eid::Registry;
 
 pub fn root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("..").join("..")

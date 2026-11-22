@@ -1,11 +1,11 @@
-// Package ecdid implements the Ecd ID, version 1: a 16-byte identifier of system (15 bits), kind (15), reserved
+// Package eid implements the Ecd ID, version 1: a 16-byte identifier of system (15 bits), kind (15), reserved
 // (2), Unix milliseconds (48), writer (30) and count (18), whose canonical text is 28 lowercase characters such as
 // emq_job_23obzcbapvupu2272222. The specification is in spec/ at the repository root; the vectors in vectors/ are
 // the conformance contract.
 //
 // The package uses the standard library only. Clocks, lease stores, process ids and random sources are interfaces,
 // so restarts, clocks set back and cloned processes can be exercised deterministically.
-package ecdid
+package eid
 
 import "bytes"
 
@@ -69,7 +69,7 @@ func ParseCode(s string) (Code, bool) {
 func MustCode(s string) Code {
 	c, ok := ParseCode(s)
 	if !ok {
-		panic("ecdid: invalid code " + s)
+		panic("eid: invalid code " + s)
 	}
 	return c
 }

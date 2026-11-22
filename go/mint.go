@@ -1,4 +1,4 @@
-package ecdid
+package eid
 
 import (
 	"crypto/rand"

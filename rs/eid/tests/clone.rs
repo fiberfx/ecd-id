@@ -8,7 +8,7 @@ use std::sync::Arc;
 use std::thread;
 
 use common::homed_registry;
-use ecd_id::{
+use eid::{
     Allocator, Code, Id, LEASE_TERM_MAX, Lease, LeaseStore, ManualClock, MemoryStore, Minter, PidSource, Refusal,
 };
 

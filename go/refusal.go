@@ -1,4 +1,4 @@
-package ecdid
+package eid
 
 // Refusal is an error whose text is the reason the specification and the vectors name.
 type Refusal string

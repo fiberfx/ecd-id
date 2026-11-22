@@ -1,5 +1,5 @@
-// Command ecdid parses, validates and mints Ecd IDs, version 1 (spec/cli.md). It uses the standard library and the
-// package ecdid only.
+// Command eid parses, validates and mints Ecd IDs, version 1 (spec/cli.md). It uses the standard library and the
+// package eid only.
 package main
 
 import (
@@ -12,15 +12,15 @@ import (
 	"strings"
 	"time"
 
-	"ecdid"
+	"eid"
 )
 
 const usage = `usage:
-  ecdid parse ID
-  ecdid valid ID
-  ecdid mint SYSTEM KIND [-n N] --store DIR [--home NAME] [--registry DIR]
-  ecdid mint SYSTEM KIND [-n N] --lease LEASE [--registry DIR]
-  ecdid detached KIND [-n N]
+  eid parse ID
+  eid valid ID
+  eid mint SYSTEM KIND [-n N] --store DIR [--home NAME] [--registry DIR]
+  eid mint SYSTEM KIND [-n N] --lease LEASE [--registry DIR]
+  eid detached KIND [-n N]
 `
 
 // Exit statuses.
@@ -44,15 +44,15 @@ const (
 type env struct {
 	getenv   func(string) string
 	hostname func() (string, error)
-	clock    ecdid.Clock
-	random   ecdid.RandomSource
-	pids     ecdid.PidSource
+	clock    eid.Clock
+	random   eid.RandomSource
+	pids     eid.PidSource
 	sleep    func(time.Duration)
 }
 
 func main() {
-	e := env{getenv: os.Getenv, hostname: os.Hostname, clock: ecdid.SystemClock{}, random: ecdid.OsRandom{},
-		pids: ecdid.ProcessPid{}, sleep: time.Sleep}
+	e := env{getenv: os.Getenv, hostname: os.Hostname, clock: eid.SystemClock{}, random: eid.OsRandom{},
+		pids: eid.ProcessPid{}, sleep: time.Sleep}
 	os.Exit(run(os.Args[1:], e, os.Stdout, os.Stderr))
 }
 
@@ -64,20 +64,20 @@ func (u usageError) Error() string { return string(u) }
 // "refused: REASON", on standard error.
 func run(args []string, e env, stdout, stderr io.Writer) int {
 	out, err := dispatch(args, e)
-	var refusal ecdid.Refusal
+	var refusal eid.Refusal
 	var bad usageError
 	switch {
 	case err == nil:
 		io.WriteString(stdout, out)
 		return exitOK
 	case errors.As(err, &bad):
-		fmt.Fprintf(stderr, "ecdid: %s\n%s", bad, usage)
+		fmt.Fprintf(stderr, "eid: %s\n%s", bad, usage)
 		return exitUsage
 	case errors.As(err, &refusal):
 		fmt.Fprintf(stderr, "refused: %s\n", refusal)
 		return exitRefused
 	default:
-		fmt.Fprintf(stderr, "ecdid: %v\n", err)
+		fmt.Fprintf(stderr, "eid: %v\n", err)
 		return exitFailed
 	}
 }
@@ -136,7 +136,7 @@ func dispatch(args []string, e env) (string, error) {
 		if len(o.pos) != 1 || o.count != 1 || o.store != "" || o.home != "" || o.registry != "" || o.lease != "" {
 			return "", usageError(args[0] + " takes one ID")
 		}
-		id, err := ecdid.ParseString(o.pos[0])
+		id, err := eid.ParseString(o.pos[0])
 		if err != nil {
 			return "", err
 		}
@@ -162,26 +162,26 @@ func dispatch(args []string, e env) (string, error) {
 }
 
 // describe is the JSON line of the fields of id.
-func describe(id ecdid.ID) string {
+func describe(id eid.ID) string {
 	return fmt.Sprintf(`{"text":"%s","hex":"%x","system":"%s","kind":"%s","time":%d,"writer":%d,"count":%d,"class":"%s","stream":"%s"}`+"\n",
 		id, id[:], id.System(), id.Kind(), id.Time(), id.Writer(), id.Count(), id.Class(), id.StreamID())
 }
 
-func parseKind(s string) (ecdid.Code, error) {
-	k, ok := ecdid.ParseCode(s)
+func parseKind(s string) (eid.Code, error) {
+	k, ok := eid.ParseCode(s)
 	if !ok || !k.IsKind() {
-		return 0, ecdid.ErrKind
+		return 0, eid.ErrKind
 	}
 	return k, nil
 }
 
-func loadRegistry(o options, e env) (*ecdid.Registry, error) {
+func loadRegistry(o options, e env) (*eid.Registry, error) {
 	dir := o.registry
 	if dir == "" {
-		dir = e.getenv("ECD_ID_REGISTRY")
+		dir = e.getenv("EID_REGISTRY")
 	}
 	if dir == "" {
-		return nil, errors.New("no registry: give --registry DIR or set ECD_ID_REGISTRY")
+		return nil, errors.New("no registry: give --registry DIR or set EID_REGISTRY")
 	}
 	systems, err := os.ReadFile(filepath.Join(dir, "systems.tsv"))
 	if err != nil {
@@ -191,7 +191,7 @@ func loadRegistry(o options, e env) (*ecdid.Registry, error) {
 	if err != nil {
 		return nil, err
 	}
-	return ecdid.ParseRegistry(string(systems), string(kinds))
+	return eid.ParseRegistry(string(systems), string(kinds))
 }
 
 func mint(o options, e env) (string, error) {
@@ -199,18 +199,18 @@ func mint(o options, e env) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	system, ok := ecdid.ParseCode(o.pos[0])
+	system, ok := eid.ParseCode(o.pos[0])
 	if !ok {
 		return "", usageError(o.pos[0] + " is not a system code")
 	}
 	switch system.Class() {
-	case ecdid.Reserved:
-		return "", ecdid.ErrSystemReserved
-	case ecdid.Detached:
+	case eid.Reserved:
+		return "", eid.ErrSystemReserved
+	case eid.Detached:
 		if o.store != "" {
-			return "", ecdid.ErrClass
+			return "", eid.ErrClass
 		}
-	case ecdid.Registered:
+	case eid.Registered:
 		reg, err := loadRegistry(o, e)
 		if err != nil {
 			return "", err
@@ -218,30 +218,30 @@ func mint(o options, e env) (string, error) {
 		row, ok := reg.System(system)
 		switch {
 		case !ok:
-			return "", ecdid.ErrUnknown
-		case row.State != ecdid.Live:
-			return "", ecdid.ErrState
+			return "", eid.ErrUnknown
+		case row.State != eid.Live:
+			return "", eid.ErrState
 		}
-		if k, ok := reg.Kind(system, kind); !ok || k.State != ecdid.Live {
-			return "", ecdid.ErrKind
+		if k, ok := reg.Kind(system, kind); !ok || k.State != eid.Live {
+			return "", eid.ErrKind
 		}
 		if o.store != "" {
 			return mintStored(o, e, reg, system, kind)
 		}
 	}
-	l, err := ecdid.ParseLease(o.lease)
+	l, err := eid.ParseLease(o.lease)
 	if err != nil {
 		return "", err
 	}
 	if l.System != system {
-		return "", ecdid.ErrLeaseSystem
+		return "", eid.ErrLeaseSystem
 	}
 	return mintIn(l, kind, o.count, e)
 }
 
 // mintIn mints n ids of kind inside lease l.
-func mintIn(l ecdid.Lease, kind ecdid.Code, n int, e env) (string, error) {
-	m := ecdid.NewMinter(l, e.clock, e.pids)
+func mintIn(l eid.Lease, kind eid.Code, n int, e env) (string, error) {
+	m := eid.NewMinter(l, e.clock, e.pids)
 	var b strings.Builder
 	for i := 0; i < n; i++ {
 		id, err := m.Mint(kind)
@@ -258,7 +258,7 @@ func homeOf(o options, e env) (string, error) {
 	if o.home != "" {
 		return o.home, nil
 	}
-	if h := e.getenv("ECD_ID_HOME"); h != "" {
+	if h := e.getenv("EID_HOME"); h != "" {
 		return h, nil
 	}
 	h, err := e.hostname()
@@ -271,23 +271,23 @@ func homeOf(o options, e env) (string, error) {
 // mintStored takes a lease from the store in o.store, as the allocator of system, and mints n ids inside it. Two
 // calls that overlap take the activation in turn; a call that starts in the second of the previous grant waits for
 // the next second.
-func mintStored(o options, e env, reg *ecdid.Registry, system, kind ecdid.Code) (string, error) {
+func mintStored(o options, e env, reg *eid.Registry, system, kind eid.Code) (string, error) {
 	home, err := homeOf(o, e)
 	if err != nil {
 		return "", err
 	}
-	st, err := ecdid.OpenFileStore(o.store)
+	st, err := eid.OpenFileStore(o.store)
 	if err != nil {
 		return "", err
 	}
-	offset, err := ecdid.RandomOffset(e.random)
+	offset, err := eid.RandomOffset(e.random)
 	if err != nil {
 		return "", err
 	}
-	var a *ecdid.Allocator
+	var a *eid.Allocator
 	for try := 0; ; try++ {
-		a, err = ecdid.StartAllocator(reg, system, home, st, e.clock, offset)
-		if err != ecdid.ErrActive || try == activeTries {
+		a, err = eid.StartAllocator(reg, system, home, st, e.clock, offset)
+		if err != eid.ErrActive || try == activeTries {
 			break
 		}
 		e.sleep(activeWaitMs * time.Millisecond)
@@ -296,10 +296,10 @@ func mintStored(o options, e env, reg *ecdid.Registry, system, kind ecdid.Code) 
 		return "", storeError(err, st)
 	}
 	defer st.Release(system)
-	var l ecdid.Lease
+	var l eid.Lease
 	for try := 0; ; try++ {
 		l, err = a.Grant(leaseTermMs)
-		if err != ecdid.ErrWait || try == waitTries {
+		if err != eid.ErrWait || try == waitTries {
 			break
 		}
 		e.sleep(time.Duration(1000-e.clock.NowMs()%1000+1) * time.Millisecond)
@@ -311,7 +311,7 @@ func mintStored(o options, e env, reg *ecdid.Registry, system, kind ecdid.Code) 
 }
 
 // storeError names a failure of the store's own input or output instead of the refusal that follows from it.
-func storeError(err error, st *ecdid.FileStore) error {
+func storeError(err error, st *eid.FileStore) error {
 	if ioErr := st.Err(); ioErr != nil {
 		return fmt.Errorf("store %s: %w", st.Dir(), ioErr)
 	}
@@ -323,7 +323,7 @@ func detached(o options, e env) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	l, err := ecdid.DetachedLease(e.random, e.clock, nil)
+	l, err := eid.DetachedLease(e.random, e.clock, nil)
 	if err != nil {
 		return "", err
 	}

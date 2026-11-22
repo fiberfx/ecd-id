@@ -1,4 +1,4 @@
-//! Stream ids against a running Valkey server, when `ECD_ID_VALKEY` names its address. Without it the test prints
+//! Stream ids against a running Valkey server, when `EID_VALKEY` names its address. Without it the test prints
 //! that it did not run and passes; the arithmetic is covered by tests/stream.rs.
 
 mod common;
@@ -8,7 +8,7 @@ use std::net::TcpStream;
 use std::sync::Arc;
 use std::time::Duration;
 
-use ecd_id::{Code, Id, Lease, ManualClock, ManualPid, Minter, StreamId, from_stream};
+use eid::{Code, Id, Lease, ManualClock, ManualPid, Minter, StreamId, from_stream};
 
 #[derive(Debug)]
 #[allow(dead_code)]
@@ -95,8 +95,8 @@ fn minter(system: &str, clock: Arc<ManualClock>) -> Minter {
 
 #[test]
 fn g4_valkey_live() {
-    let Ok(addr) = std::env::var("ECD_ID_VALKEY") else {
-        println!("VALKEY-NOT-RUN: ECD_ID_VALKEY is not set");
+    let Ok(addr) = std::env::var("EID_VALKEY") else {
+        println!("VALKEY-NOT-RUN: EID_VALKEY is not set");
         return;
     };
     let mut c = Conn::open(&addr);
@@ -108,7 +108,7 @@ fn g4_valkey_live() {
         }
         other => format!("{other:?}"),
     };
-    for k in ["ecdid:g4", "ecdid:g4:legacy", "ecdid:g4:race"] {
+    for k in ["eid:g4", "eid:g4:legacy", "eid:g4:race"] {
         c.cmd(&["DEL", k]);
     }
 
@@ -125,10 +125,10 @@ fn g4_valkey_live() {
     ids.sort_by_key(|i| i.stream_id());
     for id in &ids {
         let sid = id.stream_id().to_string();
-        let reply = c.cmd(&["XADD", "ecdid:g4", sid.as_str(), "id", id.to_string().as_str()]);
+        let reply = c.cmd(&["XADD", "eid:g4", sid.as_str(), "id", id.to_string().as_str()]);
         assert_eq!(bulk(&reply), sid, "XADD {sid}");
     }
-    let Reply::Array(Some(entries)) = c.cmd(&["XRANGE", "ecdid:g4", "-", "+"]) else { panic!("XRANGE") };
+    let Reply::Array(Some(entries)) = c.cmd(&["XRANGE", "eid:g4", "-", "+"]) else { panic!("XRANGE") };
     assert_eq!(entries.len(), ids.len());
     for (e, id) in entries.iter().zip(&ids) {
         let Reply::Array(Some(parts)) = e else { panic!("entry") };
@@ -142,7 +142,7 @@ fn g4_valkey_live() {
     let mut legacy_refused = 0;
     for id in &ids {
         let sid = format!("{}-{}", id.time(), id.legacy_tail());
-        if let Reply::Error(_) = c.cmd(&["XADD", "ecdid:g4:legacy", sid.as_str(), "id", id.to_string().as_str()]) {
+        if let Reply::Error(_) = c.cmd(&["XADD", "eid:g4:legacy", sid.as_str(), "id", id.to_string().as_str()]) {
             legacy_refused += 1;
         }
     }
@@ -152,14 +152,14 @@ fn g4_valkey_live() {
     let (mut low, mut high) = (minter("emq", clock.clone()), minter("kan", clock.clone()));
     let h = high.mint(evt).unwrap().stream_id().to_string();
     let l = low.mint(evt).unwrap().stream_id().to_string();
-    assert_eq!(bulk(&c.cmd(&["XADD", "ecdid:g4:race", h.as_str(), "f", "v"])), h);
-    let race = c.cmd(&["XADD", "ecdid:g4:race", l.as_str(), "f", "v"]);
+    assert_eq!(bulk(&c.cmd(&["XADD", "eid:g4:race", h.as_str(), "f", "v"])), h);
+    let race = c.cmd(&["XADD", "eid:g4:race", l.as_str(), "f", "v"]);
     assert!(matches!(race, Reply::Error(_)), "same-ms lower tail must be refused, got {race:?}");
     clock.advance(1);
     let again = low.mint(evt).unwrap().stream_id().to_string();
-    assert_eq!(bulk(&c.cmd(&["XADD", "ecdid:g4:race", again.as_str(), "f", "v"])), again);
+    assert_eq!(bulk(&c.cmd(&["XADD", "eid:g4:race", again.as_str(), "f", "v"])), again);
 
-    if let Reply::Error(e) = c.cmd(&["XADD", "ecdid:g4:race", "0-0", "f", "v"]) {
+    if let Reply::Error(e) = c.cmd(&["XADD", "eid:g4:race", "0-0", "f", "v"]) {
         println!("VALKEY 0-0 refused: {e}");
     }
     println!(

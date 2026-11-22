@@ -5,7 +5,7 @@ mod common;
 use std::collections::HashSet;
 use std::sync::Arc;
 
-use ecd_id::{Code, Id, Lease, ManualClock, ManualPid, Minter, StreamId, from_stream, valkey_accepts};
+use eid::{Code, Id, Lease, ManualClock, ManualPid, Minter, StreamId, from_stream, valkey_accepts};
 
 pub const T: u64 = 1_795_357_800_000;
 const WRITER: u32 = 3 << 13;

@@ -21,7 +21,7 @@ func cliRow(name, args string, exit int, stdout, stderr string) string {
 	return row(name, args, exit, cliCell(stdout), cliCell(stderr))
 }
 
-// describe is the JSON line that `ecdid parse` prints for an id.
+// describe is the JSON line that `eid parse` prints for an id.
 func describe(b []byte) string {
 	f := fields(b)
 	return fmt.Sprintf(`{"text":"%s","hex":"%x","system":"%s","kind":"%s","time":%d,"writer":%d,"count":%d,"class":"%s","stream":"%s"}`+"\n",
@@ -40,8 +40,8 @@ func invalidText(name string) string {
 func genCLI() string {
 	var out strings.Builder
 	out.WriteString(header)
-	out.WriteString("# command lines of ecdid: arguments (- for none), exit status, standard output and standard error;\n")
-	out.WriteString("# \\n is a newline, - is empty and * is any text; ECD_ID_REGISTRY names registry/ and the clock reads 1795271400123\n")
+	out.WriteString("# command lines of eid: arguments (- for none), exit status, standard output and standard error;\n")
+	out.WriteString("# \\n is a newline, - is empty and * is any text; EID_REGISTRY names registry/ and the clock reads 1795271400123\n")
 	out.WriteString("# case\targs\texit\tstdout\tstderr\n")
 
 	ids := []struct {
@@ -129,7 +129,7 @@ func genCLI() string {
 	usage("usage-valid-two-ids", "valid a b")
 	usage("usage-mint-no-kind", "mint emq")
 	usage("usage-mint-no-source", "mint emq job")
-	usage("usage-mint-both-sources", "mint emq job --lease "+emqLease+" --store /tmp/ecdid-store")
+	usage("usage-mint-both-sources", "mint emq job --lease "+emqLease+" --store /tmp/eid-store")
 	usage("usage-count-zero", "mint emq job -n 0 --lease "+emqLease)
 	usage("usage-count-over", "mint emq job -n 1000001 --lease "+emqLease)
 	usage("usage-flag-no-value", "mint emq job --lease")

@@ -6,7 +6,7 @@ mod common;
 use std::collections::HashSet;
 use std::sync::Arc;
 
-use ecd_id::{
+use eid::{
     Admission, Class, Code, DEFAULT_AHEAD_MS, Door, Id, LEASE_TERM_MAX, Lease, ManualClock, ManualPid, Minter, OsRandom,
     Refusal, detached_lease,
 };
@@ -33,7 +33,7 @@ fn traffic(clock: Arc<ManualClock>) -> (Vec<Id>, Lease) {
     let mut ids = Vec::new();
     let job = code("job");
     for p in 0..50u32 {
-        let mut d = minter(&format!("3a{}", ecd_id::ALPHABET[(p % 32) as usize] as char), 100 + p, clock.clone());
+        let mut d = minter(&format!("3a{}", eid::ALPHABET[(p % 32) as usize] as char), 100 + p, clock.clone());
         for _ in 0..4 {
             ids.push(d.mint(job).unwrap());
             ids.push(leased.mint(job).unwrap());
