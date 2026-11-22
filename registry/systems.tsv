@@ -6,6 +6,6 @@ brd	brd14 embeddings	-	-	retired	-
 ecd	ecd-core daemon	-	-	live	-
 emq	EchoMQ	-	-	live	-
 fvx	fv supervisor	-	-	live	-
-kan	KAN	-	-	live	-
+kan	KAN	-	m5	live	-
 mxe	mx-echo applications	-	-	live	-
 mxr	mx and mx-exec runs	-	-	live	-

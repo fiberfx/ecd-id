@@ -96,9 +96,13 @@ func genValid(rng *mersenne) string {
 	return out.String()
 }
 
-func genInvalid() string {
+// textCase is a named input text.
+type textCase struct{ name, raw string }
+
+// invalidCases are the texts the strict parse refuses.
+func invalidCases() []textCase {
 	t := "emq_job_23obzcbapvupu2272222"
-	cases := []struct{ name, raw string }{
+	return []textCase{
 		{"empty", ""},
 		{"upper", strings.ToUpper(t)},
 		{"upper-one", t[:9] + "O" + t[10:]},
@@ -127,6 +131,10 @@ func genInvalid() string {
 		{"kind-digit-2", t[:4] + "j2b" + t[7:]},
 		{"kind-digit-3", t[:4] + "jo7" + t[7:]},
 	}
+}
+
+func genInvalid() string {
+	cases := invalidCases()
 	var out strings.Builder
 	out.WriteString(header)
 	out.WriteString("# texts the strict parse refuses, each with the reason of the first step that fails\n")
@@ -398,6 +406,7 @@ func generate() []generated {
 	add("lease.tsv", genLease())
 	add("mint.tsv", genMint())
 	add("mxdb.tsv", genMxdb())
+	add("cli.tsv", genCLI())
 	return files
 }
 
