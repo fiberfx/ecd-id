@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"eid"
+	eid "github.com/fiberfx/ecd-id/go"
 )
 
 const (

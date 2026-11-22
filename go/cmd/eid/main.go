@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"eid"
+	eid "github.com/fiberfx/ecd-id/go"
 )
 
 const usage = `usage:
