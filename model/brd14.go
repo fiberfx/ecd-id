@@ -190,20 +190,27 @@ func answer(out string, err error) string {
 
 func genBrd14() string {
 	kinds := brdKinds()
-	// the registry layer: the pure answer, then a refusal of a kind that brd has no row for
-	registry := func(out string, err error, b []byte) string {
-		if err == nil && !kinds[codeText(fields(b).kind)] {
-			return "!brd14-kind"
-		}
-		return answer(out, err)
-	}
 	var out strings.Builder
 	out.WriteString(header)
 	out.WriteString("# brd14 ids and their embedding into ids of the system brd (spec/registry.md#brd14), both ways\n")
 	out.WriteString("# from: input is the brd14 id's bytes in hex; to: input is the Ecd ID's canonical text\n")
-	out.WriteString("# expect is the pure function's answer, registry the registry layer's against registry/kinds.tsv:\n")
-	out.WriteString("# the output, or !reason\n")
-	out.WriteString("# case\top\tinput\texpect\tregistry\n")
+	out.WriteString("# expect is the layer's answer: the output, or !reason. pure: from_brd14 or to_brd14, which read no\n")
+	out.WriteString("# registry; the registry layer answers the same unless a registry row of the same case and op follows.\n")
+	out.WriteString("# registry: the registry layer, against registry/kinds.tsv, refuses a kind that brd has no row for\n")
+	out.WriteString("# case\top\tlayer\tinput\texpect\n")
+	seen := map[string]bool{}
+	// pure writes the pure row of an input and, when the registry layer refuses what the pure layer accepts, the
+	// registry row after it.
+	pure := func(name, op, input, res string, err error, b []byte) {
+		if err != nil {
+			seen[reason(err)] = true
+		}
+		out.WriteString(row(name, op, "pure", input, answer(res, err)))
+		if err == nil && !kinds[codeText(fields(b).kind)] {
+			seen["brd14-kind"] = true
+			out.WriteString(row(name, op, "registry", input, "!brd14-kind"))
+		}
+	}
 
 	type valid struct{ name, text string }
 	var ids []valid
@@ -223,6 +230,8 @@ func genBrd14() string {
 		valid{"kind-row-gam", brd14Text("GAM", 65459497641, 7, 9)},
 		valid{"kind-no-row", brd14Text("QQQ", 65459497641, 7, 9)},
 		valid{"kind-sys", brd14Text("SYS", 65459497641, 7, 9)},
+		valid{"kind-msh", brd14Text("MSH", 65459497641, 7, 9)},
+		valid{"kind-sdg", brd14Text("SDG", 65459497641, 7, 9)},
 		valid{"order-1", brd14Text("EVT", 65459497641, 5, 4095)},
 		valid{"order-2", brd14Text("EVT", 65459497641, 6, 0)},
 		valid{"order-3", brd14Text("EVT", 65459497642, 0, 0)},
@@ -239,8 +248,8 @@ func genBrd14() string {
 		back, err2 := toBrd14(b)
 		assert(err == nil && err2 == nil && back == v.text, "brd14: "+v.text+" embeds and returns")
 		embedded[i] = b
-		out.WriteString(row(v.name, "from", hex.EncodeToString([]byte(v.text)), encode(b), registry(encode(b), nil, b)))
-		out.WriteString(row(v.name, "to", encode(b), v.text, registry(v.text, nil, b)))
+		pure(v.name, "from", hex.EncodeToString([]byte(v.text)), encode(b), nil, b)
+		pure(v.name, "to", encode(b), v.text, nil, b)
 	}
 	for i := range ids {
 		for j := range ids {
@@ -249,12 +258,10 @@ func genBrd14() string {
 		}
 	}
 
-	seen := map[string]bool{}
 	from := func(name string, raw []byte) {
 		b, err := fromBrd14(raw)
 		assert(err != nil, "brd14: accepted "+name)
-		seen[reason(err)] = true
-		out.WriteString(row(name, "from", hexOrDash(raw), answer("", err), registry("", err, b)))
+		pure(name, "from", hexOrDash(raw), "", err, b)
 	}
 	for i, r := range brd14RefusalReferences {
 		raw, _ := hex.DecodeString(strings.TrimPrefix(r[0], "-"))
@@ -289,8 +296,7 @@ func genBrd14() string {
 		assert(err == nil, "brd14: a valid id "+name)
 		_, err = toBrd14(b)
 		assert(err != nil, "brd14: accepted "+name)
-		seen[reason(err)] = true
-		out.WriteString(row(name, "to", encode(b), answer("", err), registry("", err, b)))
+		pure(name, "to", encode(b), "", err, b)
 	}
 	to("system-emq", must(parse([]byte("emq_job_23obzcbapvupu2272222"))))
 	to("system-detached", pack(mustCode("3ab"), usr, brd14Epoch, 0, 0))
@@ -306,7 +312,7 @@ func genBrd14() string {
 	to("time-writer-count", pack(brd, usr, brd14Epoch-1, 1024, 4096))
 	to("writer-count", pack(brd, usr, brd14Epoch, 1024, 4096))
 	for _, r := range []string{"brd14-length", "brd14-namespace", "brd14-alphabet", "brd14-range", "brd14-system",
-		"brd14-time", "brd14-writer", "brd14-count"} {
+		"brd14-time", "brd14-writer", "brd14-count", "brd14-kind"} {
 		assert(seen[r], "brd14: a refusal row for "+r)
 	}
 	return out.String()

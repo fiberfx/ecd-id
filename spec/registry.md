@@ -105,33 +105,33 @@ snowflake = ts << 22 | node << 12 | seq     ts: 41 bits, milliseconds since 1704
 | `node` | writer: `node` |
 | `seq` | count: `seq` |
 
-`from_brd14(text)` refuses, checking in this order (the order of brd14's own decode):
+The refusals belong to two layers:
 
-| Input | Reason |
-|---|---|
-| Not exactly 14 bytes | `brd14-length` |
-| A namespace byte outside `A`–`Z`; a namespace with a digit or a lowercase letter is not embeddable | `brd14-namespace` |
-| A payload byte outside the Base62 alphabet | `brd14-alphabet` |
-| A payload of 2^63 or more, that is, above `AzL8n0Y58m7` | `brd14-range` |
+- **pure**: `from_brd14(text)` and `to_brd14(id)` refuse syntax and range. They read no registry, as steps 1–7 of the
+  strict parse read none ([id.md](id.md#strict-parse)).
+- **registry**: the registry layer runs the same function first, so it refuses everything the pure layer refuses, and
+  adds one refusal: the kind has no row of the system `brd` in `registry/kinds.tsv`.
 
-`to_brd14(id)` refuses, checking in this order:
+Each function checks in the order of the table and refuses at the first failing check; `from_brd14` checks in the order
+of brd14's own decode.
 
-| Input | Reason |
-|---|---|
-| The system is not `brd` | `brd14-system` |
-| The time is below 1704067200000, or at or above 1704067200000 + 2^41 | `brd14-time` |
-| The writer is 2^10 or more | `brd14-writer` |
-| The count is 2^12 or more | `brd14-count` |
+| Layer | Function | Input | Reason |
+|---|---|---|---|
+| pure | `from_brd14` | Not exactly 14 bytes | `brd14-length` |
+| pure | `from_brd14` | A namespace byte outside `A`–`Z`; a namespace with a digit or a lowercase letter is not embeddable | `brd14-namespace` |
+| pure | `from_brd14` | A payload byte outside the Base62 alphabet | `brd14-alphabet` |
+| pure | `from_brd14` | A payload of 2^63 or more, that is, above `AzL8n0Y58m7` | `brd14-range` |
+| pure | `to_brd14` | The system is not `brd` | `brd14-system` |
+| pure | `to_brd14` | The time is below 1704067200000, or at or above 1704067200000 + 2^41 | `brd14-time` |
+| pure | `to_brd14` | The writer is 2^10 or more | `brd14-writer` |
+| pure | `to_brd14` | The count is 2^12 or more | `brd14-count` |
+| registry | both | The kind has no row of the system `brd` | `brd14-kind` |
 
-The kind needs no check: the kind of a valid id is three letters, and their uppercase form is a namespace.
-
-#### The registry layer
-
-`from_brd14` and `to_brd14` need no registry, as steps 1–7 of the strict parse need none ([id.md](id.md#strict-parse)).
-A registry layer runs the same function first and then refuses an id whose kind has no row of the system `brd` in
-`registry/kinds.tsv`, with the reason `brd14-kind`. A row in any state counts: a closed or retired kind stays readable.
-The namespace `SYS` embeds into the kind `sys`, which belongs to the format and has no row, so the registry layer
-refuses it.
+- `to_brd14` needs no check of the kind: the kind of a valid id is three letters, and their uppercase form is a
+  namespace.
+- For `brd14-kind`, a row in any state counts: a closed or retired kind stays readable.
+- The namespace `SYS` embeds into the kind `sys`, which belongs to the format and has no row, so the registry layer
+  refuses it.
 
 #### Order and inverse
 
@@ -142,4 +142,6 @@ refuses it.
   for every id `y` that `to_brd14` accepts. Those ids are exactly the `brd` ids with time in
   [1704067200000, 1704067200000 + 2^41), writer below 2^10 and count below 2^12.
 
-`vectors/brd14.tsv` gives both directions, every refusal and, beside each, the registry layer's answer.
+`vectors/brd14.tsv` gives both directions and each refusal in one row with its layer. A `pure` row is the answer of
+`from_brd14` or `to_brd14`, and the registry layer gives the same answer unless a `registry` row of the same case and
+direction follows it with `brd14-kind`.

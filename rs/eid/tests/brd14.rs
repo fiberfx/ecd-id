@@ -20,27 +20,49 @@ fn answer<T: ToString>(r: Result<T, Refusal>) -> String {
 #[test]
 fn g14_brd14_vectors_both_ways() {
     let reg = repo_registry();
+    let rows = tsv("brd14.tsv");
+    // (case, op) that a registry row refuses
+    let refused: HashSet<(String, String)> =
+        rows.iter().filter(|r| r[2] == "registry").map(|r| (r[0].clone(), r[1].clone())).collect();
+    // (case, op) whose pure row accepts
+    let mut accepted: HashSet<(String, String)> = HashSet::new();
     let mut seen = HashSet::new();
     let mut n: HashMap<String, usize> = HashMap::new();
-    for r in &tsv("brd14.tsv") {
+    for r in &rows {
+        let key = (r[0].clone(), r[1].clone());
         let (got, got_reg) = match r[1].as_str() {
             "from" => {
-                let b = unhex(&r[2]);
+                let b = unhex(&r[3]);
                 (answer(from_brd14(&b)), answer(reg.from_brd14(&b)))
             }
             "to" => {
-                let id = Id::parse(r[2].as_bytes()).unwrap_or_else(|e| panic!("case {}: {e}", r[0]));
+                let id = Id::parse(r[3].as_bytes()).unwrap_or_else(|e| panic!("case {}: {e}", r[0]));
                 (answer(to_brd14(id)), answer(reg.to_brd14(id)))
             }
             op => panic!("case {}: op {op}", r[0]),
         };
-        assert_eq!((got.as_str(), got_reg.as_str()), (r[3].as_str(), r[4].as_str()), "case {} {} {}", r[0], r[1], r[2]);
-        for a in &r[3..5] {
-            if let Some(x) = a.strip_prefix('!') {
-                seen.insert(x.to_owned());
+        let want = r[4].as_str();
+        match r[2].as_str() {
+            "pure" => {
+                assert_eq!(got, want, "case {} {} {}: pure", r[0], r[1], r[3]);
+                if !refused.contains(&key) {
+                    assert_eq!(got_reg, want, "case {} {} {}: registry layer", r[0], r[1], r[3]);
+                }
+                if !want.starts_with('!') {
+                    accepted.insert(key);
+                }
             }
+            "registry" => {
+                assert_eq!(got_reg, want, "case {} {} {}: registry layer", r[0], r[1], r[3]);
+                assert_eq!(want, "!brd14-kind", "case {} {}: the registry layer adds brd14-kind only", r[0], r[1]);
+                assert!(accepted.contains(&key), "case {} {}: no accepting pure row before it", r[0], r[1]);
+            }
+            layer => panic!("case {}: layer {layer}", r[0]),
         }
-        *n.entry(r[1].clone()).or_default() += 1;
+        if let Some(x) = want.strip_prefix('!') {
+            seen.insert(x.to_owned());
+        }
+        *n.entry(r[2].clone()).or_default() += 1;
     }
     for reason in [
         "brd14-length",
@@ -55,15 +77,15 @@ fn g14_brd14_vectors_both_ways() {
     ] {
         assert!(seen.contains(reason), "no vector for {reason}");
     }
-    println!("G14 brd14: {} from and {} to rows agree, pure and registry layer; {} reasons", n["from"], n["to"], seen.len());
+    println!("G14 brd14: {} pure and {} registry rows agree, both ways; {} reasons", n["pure"], n["registry"], seen.len());
 }
 
 #[test]
 fn g14_brd14_order_and_inverse() {
     let pairs: Vec<(String, Id)> = tsv("brd14.tsv")
         .into_iter()
-        .filter(|r| r[1] == "to" && !r[3].starts_with('!'))
-        .map(|r| (r[3].clone(), Id::parse(r[2].as_bytes()).expect("a valid id")))
+        .filter(|r| r[1] == "to" && r[2] == "pure" && !r[4].starts_with('!'))
+        .map(|r| (r[4].clone(), Id::parse(r[3].as_bytes()).expect("a valid id")))
         .collect();
     assert!(pairs.len() > 50);
     for (a, x) in &pairs {

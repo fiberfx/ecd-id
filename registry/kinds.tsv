@@ -22,6 +22,7 @@ brd	job	command	retired	-	queue job
 brd	kan	entity	retired	-	spec record
 brd	log	entity	retired	-	log line (reserved)
 brd	msg	entity	retired	-	bus message or live message tag (two meanings)
+brd	msh	entity	retired	-	Mercury label id
 brd	not	entity	retired	-	notification job
 brd	obx	entity	retired	-	outbox (parked)
 brd	ord	entity	retired	-	key-shop order
@@ -32,6 +33,7 @@ brd	prt	entity	retired	-	flow parent
 brd	req	request	retired	-	api request or response
 brd	rom	entity	retired	-	room
 brd	rvl	entity	retired	-	wallet reversal
+brd	sdg	entity	retired	-	session digest
 brd	seg	entity	retired	-	segment
 brd	ses	activation	retired	-	session
 brd	sub	entity	retired	-	bus subscription

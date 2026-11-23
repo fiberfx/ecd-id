@@ -50,10 +50,14 @@ describe('vectors/brd14.tsv', () => {
   const data = rows('brd14.tsv');
   const kinds = brdKinds();
 
-  test('every row both ways, pure and through the registry layer, or refused with its reason', () => {
+  test('every row at its layer, both ways: pure rows, and registry rows where the registry layer refuses', () => {
     let checked = 0;
     const seen = new Set<string>();
-    for (const [name, op, input, want, wantRegistry] of data) {
+    // (case, op) that a registry row refuses, and (case, op) whose pure row accepts
+    const refused = new Set(data.filter((r) => r[2] === 'registry').map((r) => `${r[0]} ${r[1]}`));
+    const accepted = new Set<string>();
+    for (const [name, op, layer, input, want] of data) {
+      const key = `${name} ${op}`;
       let got: string;
       let gotRegistry: string;
       if (op === 'from') {
@@ -67,8 +71,17 @@ describe('vectors/brd14.tsv', () => {
       } else {
         throw new Error(`case ${name}: op ${op}`);
       }
-      expect([name, op, got, gotRegistry]).toEqual([name, op, want, wantRegistry]);
-      for (const a of [want!, wantRegistry!]) if (a.startsWith('!')) seen.add(a.slice(1));
+      if (layer === 'pure') {
+        expect([key, got]).toEqual([key, want!]);
+        if (!refused.has(key)) expect([key, gotRegistry]).toEqual([key, want!]);
+        if (!want!.startsWith('!')) accepted.add(key);
+      } else if (layer === 'registry') {
+        expect([key, gotRegistry, accepted.has(key)]).toEqual([key, '!brd14-kind', true]);
+        expect(want).toBe('!brd14-kind');
+      } else {
+        throw new Error(`case ${name}: layer ${layer}`);
+      }
+      if (want!.startsWith('!')) seen.add(want!.slice(1));
       checked++;
     }
     for (const r of REASONS) expect(seen.has(r)).toBe(true);
@@ -79,8 +92,8 @@ describe('vectors/brd14.tsv', () => {
 
   test('byte order of the embedded ids equals the order of the brd14 texts; random ids return', () => {
     const pairs = data
-      .filter((r) => r[1] === 'to' && !r[3]!.startsWith('!'))
-      .map((r) => [r[3]!, parse(r[2]!)] as const);
+      .filter((r) => r[1] === 'to' && r[2] === 'pure' && !r[4]!.startsWith('!'))
+      .map((r) => [r[4]!, parse(r[3]!)] as const);
     expect(pairs.length).toBeGreaterThan(50);
     let bad = 0;
     for (const [a, x] of pairs) for (const [b, y] of pairs) if (cmp(a, b) !== x.compare(y)) bad++;
