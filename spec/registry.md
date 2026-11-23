@@ -77,3 +77,69 @@ are the numbers. Generating per-language kind constants from these files is out 
 
 `brd` is a registered system with no home and state `retired`. Its row and its kinds stay in the files, its ids stay
 valid and readable, and nothing mints under it; the code is never reassigned.
+
+<a id="brd14"></a>
+
+### Embedded brd14 ids
+
+An id of the system `brd` arises only by embedding a brd14 id, the 14-byte identifier that preceded this format.
+Nothing was ever minted under `brd`, so every `brd` id is an embedding. The embedding is deterministic and
+stateless and needs no table: a stored brd14 id is migrated by computing its Ecd ID, and the Ecd ID gives the brd14 id
+back.
+
+A brd14 id is 14 ASCII bytes: a namespace `NS` of three bytes `A`–`Z`, then a payload of 11 Base62 digits. The Base62
+alphabet is `0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz`, values 0 to 61 in that order, so byte
+order equals value order. The payload is fixed-width, most significant digit first and left-padded with `0`; it encodes
+a 63-bit snowflake, below 2^63, whose largest payload is `AzL8n0Y58m7`:
+
+```text
+snowflake = ts << 22 | node << 12 | seq     ts: 41 bits, milliseconds since 1704067200000 (2024-01-01T00:00:00Z)
+                                            node: 10 bits, the minting node; seq: 12 bits, the count in its millisecond
+```
+
+| brd14 id | Ecd ID |
+|---|---|
+| (none) | system `brd` |
+| `NS` | kind: `NS` in lowercase |
+| `ts` | time: `1704067200000 + ts` |
+| `node` | writer: `node` |
+| `seq` | count: `seq` |
+
+`from_brd14(text)` refuses, checking in this order (the order of brd14's own decode):
+
+| Input | Reason |
+|---|---|
+| Not exactly 14 bytes | `brd14-length` |
+| A namespace byte outside `A`–`Z`; a namespace with a digit or a lowercase letter is not embeddable | `brd14-namespace` |
+| A payload byte outside the Base62 alphabet | `brd14-alphabet` |
+| A payload of 2^63 or more, that is, above `AzL8n0Y58m7` | `brd14-range` |
+
+`to_brd14(id)` refuses, checking in this order:
+
+| Input | Reason |
+|---|---|
+| The system is not `brd` | `brd14-system` |
+| The time is below 1704067200000, or at or above 1704067200000 + 2^41 | `brd14-time` |
+| The writer is 2^10 or more | `brd14-writer` |
+| The count is 2^12 or more | `brd14-count` |
+
+The kind needs no check: the kind of a valid id is three letters, and their uppercase form is a namespace.
+
+#### The registry layer
+
+`from_brd14` and `to_brd14` need no registry, as steps 1–7 of the strict parse need none ([id.md](id.md#strict-parse)).
+A registry layer runs the same function first and then refuses an id whose kind has no row of the system `brd` in
+`registry/kinds.tsv`, with the reason `brd14-kind`. A row in any state counts: a closed or retired kind stays readable.
+The namespace `SYS` embeds into the kind `sys`, which belongs to the format and has no row, so the registry layer
+refuses it.
+
+#### Order and inverse
+
+- Within one namespace, the byte order of the embedded ids equals the numeric order of the snowflakes: `ts`, then
+  `node`, then `seq`, which is brd14's mint order. Across namespaces, it equals the byte order of the brd14 texts, since
+  `A`–`Z` and `a`–`z` are in the same order.
+- `to_brd14(from_brd14(x)) = x` for every brd14 id `x`, so the embedding is injective, and `from_brd14(to_brd14(y)) = y`
+  for every id `y` that `to_brd14` accepts. Those ids are exactly the `brd` ids with time in
+  [1704067200000, 1704067200000 + 2^41), writer below 2^10 and count below 2^12.
+
+`vectors/brd14.tsv` gives both directions, every refusal and, beside each, the registry layer's answer.

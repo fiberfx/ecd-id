@@ -38,4 +38,13 @@ const (
 	ErrForeign        Refusal = "foreign"
 	ErrAhead          Refusal = "ahead"
 	ErrLease          Refusal = "lease"
+	ErrBrd14Length    Refusal = "brd14-length"
+	ErrBrd14Namespace Refusal = "brd14-namespace"
+	ErrBrd14Alphabet  Refusal = "brd14-alphabet"
+	ErrBrd14Range     Refusal = "brd14-range"
+	ErrBrd14System    Refusal = "brd14-system"
+	ErrBrd14Time      Refusal = "brd14-time"
+	ErrBrd14Writer    Refusal = "brd14-writer"
+	ErrBrd14Count     Refusal = "brd14-count"
+	ErrBrd14Kind      Refusal = "brd14-kind"
 )

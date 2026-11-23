@@ -18,6 +18,9 @@
 #   eid-one-case    G11  the canonical text is one case (the vectors)
 #   eid-casefold    G11  directories on a case-folding file system: COULD-NOT-MEASURE in a Linux container
 #   eid-registry         the registry files load; faults refused
+#   eid-brd14       G14  brd14 ids embed into brd ids: Rust and Go agree with every row of vectors/brd14.tsv both ways, pure
+#                        and through the registry layer, every refusal with its reason; order; 1e5 random ids return
+#   eid-brd14-control    go: the unmodified scratch copy passes G14; with writer and count swapped in FromBrd14, G14 fails
 #   eid-store       G12  go: two processes x 1000 grants on one FileStore give 2000 distinct writers; control: no lock
 #   eid-cli         G13  go: the command eid against vectors/cli.tsv, in process; stores, refusals, detached
 #   eid-bin              go: eid built for linux-arm64 and darwin-arm64 (CGO off), each twice with one sha256, the
@@ -56,7 +59,7 @@ if [ $rc -ne 0 ]; then
 	# What the model would write: a file the tree lacks is printed whole between REGEN-BEGIN and REGEN-END, a file
 	# that differs as a diff.
 	R=$(mktemp -d /tmp/eid-regen.XXXXXX)
-	cp -r "$W/model" "$W/vectors" "$R/"
+	cp -r "$W/model" "$W/vectors" "$W/registry" "$R/"
 	(cd "$R/model" && go run .) >"$L/regen.log" 2>&1
 	sed 's/^/  regen: /' "$L/regen.log"
 	for f in "$R"/vectors/*.tsv; do
@@ -80,7 +83,7 @@ fi
 # The violating case: one byte of one data line of valid.tsv is changed in a scratch copy; --check must fail on that
 # file alone.
 S=$(mktemp -d /tmp/eid-control.XXXXXX)
-cp -r "$W/model" "$W/vectors" "$S/"
+cp -r "$W/model" "$W/vectors" "$W/registry" "$S/"
 n=$(grep -n -v '^#' "$S/vectors/valid.tsv" | head -1 | cut -d: -f1)
 sed -i "${n}s/^./Z/" "$S/vectors/valid.tsv"
 bytes=$(cmp -l "$W/vectors/valid.tsv" "$S/vectors/valid.tsv" | wc -l)
@@ -185,6 +188,7 @@ gate eid-mxdb g9_ '^TestG09' "owner = <code>_sys_ id; sto and dbs; all-zero refu
 gate eid-door g10_ '^TestG10' "detached bound as command token, never stored as own; control door off"
 gate eid-one-case g11_ '^TestG11' "canonical text in the vectors is one case; uppercase refused"
 gate eid-registry registry_ '^TestRegistry' "registry files load; faults refused"
+gate eid-brd14 g14_ '^TestG14' "vectors/brd14.tsv both ways, pure and registry layer, every reason; order pairwise; 1e5 random ids return"
 
 # gogate KEY GO_PATTERN DESCRIPTION: a gate that only the Go module has.
 gogate() {
@@ -193,6 +197,28 @@ gogate() {
 }
 gogate eid-store '^TestG12' "FileStore: record on disk, one activation per system, 2 processes x 1000 grants give 2000 distinct writers; control without the lock repeats"
 gogate eid-cli '^TestG13' "eid against vectors/cli.tsv in process; stores take a lease per call; refusals; detached"
+
+# The violating case of eid-brd14: a scratch copy of go/ passes G14 unmodified, and fails it with writer and count
+# swapped in FromBrd14.
+if [ "$golang" = built ]; then
+	M=$(mktemp -d /tmp/eid-brd14-mutant.XXXXXX)
+	cp -r "$W/go" "$W/vectors" "$W/registry" "$M/"
+	(cd "$M/go" && go test -count=1 -run '^TestG14' .) >"$L/brd14-unmodified.log" 2>&1
+	crc=$?
+	sed -i 's/uint32(snow>>12)&1023, uint32(snow)&4095/uint32(snow)\&4095, uint32(snow>>12)\&1023/' "$M/go/brd14.go"
+	changed=$(cmp -l "$W/go/brd14.go" "$M/go/brd14.go" 2>/dev/null | wc -l)
+	(cd "$M/go" && go test -count=1 -run '^TestG14' .) >"$L/brd14-mutant.log" 2>&1
+	mrc=$?
+	grep -E -m4 -- '--- FAIL|brd14' "$L/brd14-mutant.log" | cut -c1-220 | sed 's/^/  brd14 mutant: /'
+	if [ $crc -eq 0 ] && [ "$changed" -gt 0 ] && [ $mrc -ne 0 ]; then
+		row eid-brd14-control PASS "go: the unmodified scratch copy passes G14; writer and count swapped in FromBrd14 ($changed bytes): G14 fails, rc=$mrc"
+	else
+		row eid-brd14-control FAIL "unmodified rc=$crc, bytes changed=$changed, mutant rc=$mrc"
+	fi
+	rm -rf "$M"
+else
+	row eid-brd14-control FAIL "go=$golang"
+fi
 
 # ---- the binaries
 if [ "$golang" = built ]; then

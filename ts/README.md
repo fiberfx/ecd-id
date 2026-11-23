@@ -1,3 +1,15 @@
+
+### brd14 ids
+
+The embedding of brd14 ids into ids of the system `brd` of [`../spec/registry.md`](../spec/registry.md#brd14). A
+snowflake exceeds 2^53, so the payload is read through `bigint`.
+
+| Name | Meaning |
+|---|---|
+| `fromBrd14(input)` | The id of a brd14 id: kind = the namespace in lowercase, time = `BRD14_EPOCH` + ts, writer = node, count = seq. The input is a `string`, read as UTF-8, or a `Uint8Array`. Reasons: `brd14-length`, `brd14-namespace`, `brd14-alphabet`, `brd14-range`. |
+| `toBrd14(id)` | The inverse. Reasons: `brd14-system`, `brd14-time`, `brd14-writer`, `brd14-count`. |
+| `fromBrd14Registered(input, brdKinds)`, `toBrd14Registered(id, brdKinds)` | The registry layer: `brdKinds` is the set of kinds that `registry/kinds.tsv` gives the system `brd`, supplied by the caller; any other kind is refused with `brd14-kind`. |
+| `BRD14_LENGTH`, `BRD14_EPOCH` | The brd14 constants. |
 # @fiberfx/eid
 
 A TypeScript implementation of the Ecd ID (eid), version 1, as specified in [`../spec/id.md`](../spec/id.md): a
@@ -85,7 +97,7 @@ The text form `system:writer:not_before:not_after` of [`../spec/lease.md`](../sp
 - It does not mint. There is no minter, clock, lease store, allocator, restart or clone guard, and no door; the Go and
   Rust packages hold these.
 - It does not load the registry. The registry-aware checks (a system is registered and live, a kind has a row, a field's
-  role) live in Go and Rust. An id here is checked by layout and by kind only: three letters, with no registry lookup,
+  role) live in Go and Rust. The brd14 registry layer takes the kinds of `brd` from the caller. An id here is checked by layout and by kind only: three letters, with no registry lookup,
   so a lease-free id is not known to belong to a registered system or kind.
 - It does not talk to Valkey. `valkeyAccepts` is the documented rule, not a connection.
 - It has no command line and no file store.
@@ -96,10 +108,11 @@ The text form `system:writer:not_before:not_after` of [`../spec/lease.md`](../sp
 cd ts && bun test
 ```
 
-The tests read `../vectors/{valid,invalid,binary_invalid,lease,stream,stream_invalid}.tsv`. Each test asserts that the
+The tests read `../vectors/{valid,invalid,binary_invalid,lease,stream,stream_invalid,brd14}.tsv`, and the brd14 test
+reads `../registry/kinds.tsv`. Each test asserts that the
 number of rows it checked equals the number of data rows in the file, and prints `VECTORS <file> checked N of M`. Further
 tests give one valid and one refused case for each function where the vectors leave a gap. `bun test` strips types
 without checking them; `tsc --noEmit -p tsconfig.json` checks `src/` under `strict`.
 
-`../rows/eid-ts.rows.sh` runs the tests, the typecheck and two planted mutants (two alphabet characters swapped; the pad
-check removed), each of which must make the tests fail.
+`../rows/eid-ts.rows.sh` runs the tests, the brd14 test on its own, the typecheck and three planted mutants (two alphabet
+characters swapped; the pad check removed; writer and count swapped in `fromBrd14`), each of which must make the tests fail.

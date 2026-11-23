@@ -9,6 +9,7 @@
 
 #![forbid(unsafe_code)]
 
+mod brd14;
 mod door;
 mod id;
 mod lease;
@@ -18,6 +19,7 @@ mod stream;
 
 use std::fmt;
 
+pub use brd14::{BRD14_EPOCH, BRD14_LEN, from_brd14, to_brd14};
 pub use door::{Admission, DEFAULT_AHEAD_MS, Door};
 pub use id::{ALPHABET, COUNT_LIMIT, Class, Code, Id, SYS, TEXT_LEN, TIME_MAX, WRITER_MAX, code};
 pub use lease::{
@@ -93,6 +95,24 @@ pub enum Refusal {
     Ahead,
     /// The door: the id is outside the lease the session holds.
     Lease,
+    /// A brd14 id is not 14 bytes.
+    Brd14Length,
+    /// A byte of a brd14 id's namespace is outside `A`–`Z`.
+    Brd14Namespace,
+    /// A byte of a brd14 id's payload is outside the Base62 alphabet.
+    Brd14Alphabet,
+    /// A brd14 id's payload is 2^63 or more.
+    Brd14Range,
+    /// The id's system is not `brd`.
+    Brd14System,
+    /// The id's time is outside the brd14 epoch's 41 bits.
+    Brd14Time,
+    /// The id's writer is 2^10 or more.
+    Brd14Writer,
+    /// The id's count is 2^12 or more.
+    Brd14Count,
+    /// The kind has no row of the system `brd` in the registry.
+    Brd14Kind,
 }
 
 impl Refusal {
@@ -130,6 +150,15 @@ impl Refusal {
             Refusal::Foreign => "foreign",
             Refusal::Ahead => "ahead",
             Refusal::Lease => "lease",
+            Refusal::Brd14Length => "brd14-length",
+            Refusal::Brd14Namespace => "brd14-namespace",
+            Refusal::Brd14Alphabet => "brd14-alphabet",
+            Refusal::Brd14Range => "brd14-range",
+            Refusal::Brd14System => "brd14-system",
+            Refusal::Brd14Time => "brd14-time",
+            Refusal::Brd14Writer => "brd14-writer",
+            Refusal::Brd14Count => "brd14-count",
+            Refusal::Brd14Kind => "brd14-kind",
         }
     }
 }

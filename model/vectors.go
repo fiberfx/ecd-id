@@ -407,6 +407,7 @@ func generate() []generated {
 	add("mint.tsv", genMint())
 	add("mxdb.tsv", genMxdb())
 	add("cli.tsv", genCLI())
+	add("brd14.tsv", genBrd14())
 	return files
 }
 
