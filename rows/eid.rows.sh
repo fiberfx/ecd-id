@@ -17,12 +17,13 @@
 #   eid-door        G10  detached ids bound, never stored as own; control: no door
 #   eid-one-case    G11  the canonical text is one case (the vectors)
 #   eid-casefold    G11  directories on a case-folding file system: COULD-NOT-MEASURE in a Linux container
-#   eid-registry         the registry files load; faults refused; every kind of a retired system is retired; ecd sto live
+#   eid-registry         the registry files load; faults refused
+#   eid-registry-retired every kind row of a retired system is retired (the 39 of brd); ecd sto is present and live
 #   eid-brd14       G14  brd14 ids embed into brd ids: Rust and Go agree with every row of vectors/brd14.tsv both ways, pure
 #                        and through the registry layer, every refusal with its reason; order; 1e5 random ids return
 #   eid-brd14-control    go: the unmodified scratch copy passes G14; with writer and count swapped in FromBrd14, G14 fails
-#   eid-registry-control go and rust: every kind of a retired system is retired and ecd sto is live; a scratch copy passes
-#                        unmodified and fails with brd agt turned back to live
+#   eid-registry-retired-control  a scratch copy of registry/ passes eid-registry-retired unmodified and fails it, in Go
+#                        and Rust, with brd crs turned back to live
 #   eid-store       G12  go: two processes x 1000 grants on one FileStore give 2000 distinct writers; control: no lock
 #   eid-cli         G13  go: the command eid against vectors/cli.tsv, in process; stores, refusals, detached
 #   eid-bin              go: eid built for linux-arm64 and darwin-arm64 (CGO off), each twice with one sha256, the
@@ -189,7 +190,8 @@ gate eid-fenced-clone g7_ '^TestG07' "other home and second activation refused; 
 gate eid-mxdb g9_ '^TestG09' "owner = <code>_sys_ id; sto and dbs; all-zero refused; no time-0 mint"
 gate eid-door g10_ '^TestG10' "detached bound as command token, never stored as own; control door off"
 gate eid-one-case g11_ '^TestG11' "canonical text in the vectors is one case; uppercase refused"
-gate eid-registry registry_ '^TestRegistry' "registry files load; faults refused; every kind of a retired system retired; ecd sto live"
+gate eid-registry registry_ '^TestRegistry' "registry files load; faults refused"
+gate eid-registry-retired registry_retired '^TestRegistryRetired' "every kind row of a retired system is retired; ecd sto present and live"
 gate eid-brd14 g14_ '^TestG14' "vectors/brd14.tsv both ways, pure and registry layer, every reason; order pairwise; 1e5 random ids return"
 
 # gogate KEY GO_PATTERN DESCRIPTION: a gate that only the Go module has.
@@ -222,32 +224,32 @@ else
 	row eid-brd14-control FAIL "go=$golang"
 fi
 
-# The violating case of eid-registry: a scratch copy passes the registry tests of Go and Rust unmodified, and fails them
-# with one kind of the retired system brd turned back to live.
+# The violating case of eid-registry-retired: a scratch copy passes its tests in Go and Rust unmodified, and fails them
+# with one kind of the retired system brd, crs, turned back to live.
 if [ "$golang" = built ] && [ "$rust" = built ]; then
-	M=$(mktemp -d /tmp/eid-registry-mutant.XXXXXX)
+	M=$(mktemp -d /tmp/eid-registry-retired-mutant.XXXXXX)
 	cp -r "$W/go" "$W/rs" "$W/registry" "$W/vectors" "$M/"
-	# regtests TAG: the registry tests of both languages in the scratch copy; echoes "go=RC rust=RC"
+	# regtests TAG: the eid-registry-retired tests of both languages in the scratch copy; echoes "go=RC rust=RC"
 	regtests() {
-		(cd "$M/go" && go test -count=1 -v -run '^TestRegistry' .) >"$L/registry-$1-go.log" 2>&1
+		(cd "$M/go" && go test -count=1 -v -run '^TestRegistryRetired' .) >"$L/registry-$1-go.log" 2>&1
 		g=$?
-		(cd "$M/rs" && cargo test --release --offline -q registry_ -- --test-threads=2) >"$L/registry-$1-rs.log" 2>&1
+		(cd "$M/rs" && cargo test --release --offline -q registry_retired -- --test-threads=2) >"$L/registry-$1-rs.log" 2>&1
 		echo "go=$g rust=$?"
 	}
 	before=$(regtests unmodified)
-	sed -i 's/^brd\tagt\tentity\tretired\t/brd\tagt\tentity\tlive\t/' "$M/registry/kinds.tsv"
+	sed -i 's/^brd\tcrs\tentity\tretired\t/brd\tcrs\tentity\tlive\t/' "$M/registry/kinds.tsv"
 	changed=$(diff "$W/registry/kinds.tsv" "$M/registry/kinds.tsv" | grep -c '^>')
 	after=$(regtests mutant)
 	grep -E -- '--- FAIL|not retired' "$L/registry-mutant-go.log" | head -4 | cut -c1-220 | sed 's/^/  registry mutant go: /'
 	grep -E 'panicked|not retired|FAILED' "$L/registry-mutant-rs.log" | head -4 | cut -c1-220 | sed 's/^/  registry mutant rs: /'
 	if [ "$before" = "go=0 rust=0" ] && [ "$changed" -eq 1 ] && [ "${after%% *}" != go=0 ] && [ "${after##* }" != rust=0 ]; then
-		row eid-registry-control PASS "the unmodified scratch copy passes ($before); brd agt turned back to live (1 line): $after, both red"
+		row eid-registry-retired-control PASS "the unmodified scratch copy passes ($before); brd crs turned back to live (1 line): $after, both red"
 	else
-		row eid-registry-control FAIL "unmodified $before, lines changed=$changed, mutant $after"
+		row eid-registry-retired-control FAIL "unmodified $before, lines changed=$changed, mutant $after"
 	fi
 	rm -rf "$M"
 else
-	row eid-registry-control FAIL "go=$golang rust=$rust"
+	row eid-registry-retired-control FAIL "go=$golang rust=$rust"
 fi
 
 # ---- the binaries
