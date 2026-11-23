@@ -62,7 +62,7 @@ sh rows/eid-ts.rows.sh                       # TypeScript: bun test over the vec
 `(cd model && go run .)` regenerates `vectors/`.
 
 Test names carry the property they check: Rust tests start with `g1_` to `g11_` and `g14_`, Go tests with `TestG01` to
-`TestG14`, and the registry tests with `registry_` and `TestRegistry` (they include the kind-only check of detached ids); `g12` and `g13` exist in Go only.
+`TestG14`, and the registry tests with `registry_` and `TestRegistry` (they include the kind-only check of detached ids, and that every kind of a retired system is retired); `g12` and `g13` exist in Go only.
 
 | Prefix | Property |
 |---|---|

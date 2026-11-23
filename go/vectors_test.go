@@ -267,10 +267,35 @@ func TestG11_CanonicalTextIsOneCase(t *testing.T) {
 func TestRegistryFilesLoad(t *testing.T) {
 	reg := repoRegistry(t)
 	brd, _ := reg.System(MustCode("brd"))
-	if brd.State != Retired || len(reg.KindsOf(MustCode("emq"))) < 5 || len(reg.KindsOf(MustCode("brd"))) < 36 {
+	if brd.State != Retired || len(reg.KindsOf(MustCode("emq"))) < 5 || len(reg.KindsOf(MustCode("brd"))) < 39 {
 		t.Fatal("registry content")
 	}
 	fmt.Printf("registry: %d systems load\n", len(reg.Systems()))
+}
+
+func TestRegistryRetiredSystemsKinds(t *testing.T) {
+	reg := repoRegistry(t)
+	systems, kinds := 0, 0
+	for _, s := range reg.Systems() {
+		if s.State != Retired {
+			continue
+		}
+		systems++
+		for _, k := range reg.KindsOf(s.Code) {
+			if k.State != Retired {
+				t.Fatalf("kind %s of the retired system %s is not retired", k.Kind, s.Code)
+			}
+			kinds++
+		}
+	}
+	if systems == 0 || kinds == 0 {
+		t.Fatalf("no retired system with kinds: %d systems, %d kinds", systems, kinds)
+	}
+	sto, ok := reg.Kind(MustCode("ecd"), MustCode("sto"))
+	if !ok || sto.State != Live {
+		t.Fatalf("ecd sto: present %v, state %v", ok, sto.State)
+	}
+	fmt.Printf("registry: %d retired system, %d of its kinds, all retired; ecd sto live\n", systems, kinds)
 }
 
 func TestRegistryRefusals(t *testing.T) {

@@ -243,8 +243,25 @@ fn registry_files_load() {
     let brd = Code::parse("brd").unwrap();
     assert_eq!(reg.system(brd).unwrap().state, eid::State::Retired);
     assert!(reg.kinds_of(Code::parse("emq").unwrap()).count() >= 5);
-    assert!(reg.kinds_of(brd).count() >= 36);
+    assert!(reg.kinds_of(brd).count() >= 39);
     println!("registry: {} systems load", reg.systems().count());
+}
+
+#[test]
+fn registry_retired_systems_kinds() {
+    let reg = repo_registry();
+    let (mut systems, mut kinds) = (0, 0);
+    for s in reg.systems().filter(|s| s.state == eid::State::Retired) {
+        systems += 1;
+        for k in reg.kinds_of(s.code) {
+            assert_eq!(k.state, eid::State::Retired, "kind {} of the retired system {} is not retired", k.kind, s.code);
+            kinds += 1;
+        }
+    }
+    assert!(systems > 0 && kinds > 0, "no retired system with kinds: {systems} systems, {kinds} kinds");
+    let sto = reg.kind(Code::parse("ecd").unwrap(), Code::parse("sto").unwrap()).expect("ecd sto has a row");
+    assert_eq!(sto.state, eid::State::Live, "ecd sto");
+    println!("registry: {systems} retired system, {kinds} of its kinds, all retired; ecd sto live");
 }
 
 #[test]
