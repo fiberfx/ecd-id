@@ -164,9 +164,14 @@ is drawn again at every process start.
 - Two detached processes produce an equal id only if they share code and writer and also mint the same kind in the
   same millisecond at the same count. The chance that two given processes share code and writer is 2^-42.3; it is
   2^-30 for two copies of one state directory.
+- The code comes from one 16-bit draw `r` of the random source; `r` ≥ 61440 is drawn again, at most 64 times; the
+  code is 1024 + `r` mod 5120, so each of the 5,120 detached codes is equally likely.
 - If the random source fails, the minter returns an error. There is no fallback to a process id or a time.
 - A detached id is checked by kind only: it has no registry rows, and the registry is not consulted for it
   ([registry.md](registry.md#lease-free)).
+- A producer that mints detached ids stores them as given, as its own records, until it runs with a lease from an
+  allocator (`EID_LEASE`, [the lease](#the-lease)); a door of a registered system still never stores a detached id as
+  its own fact ([the door](#door)).
 
 <a id="door"></a>
 

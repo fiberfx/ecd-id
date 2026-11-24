@@ -22,6 +22,12 @@ example `emq_sys_22222222222222222222` is `54ad8f60` followed by 12 zero bytes.
 - A detached system has no unique code (5,120 codes are shared by chance), so its owner field holds a minted `sys` id
   kept with its code instead.
 
+## Derived names
+
+A name derived rather than minted has time 0. Its writer and count come from a 48-bit hash of what it names. No
+minted id equals it, since every lease starts at time 1 or later ([lease.md](lease.md#the-lease)). The system's own id
+is the derived name whose hash is zero.
+
 ## "None"
 
 Sixteen zero bytes are never a valid Ecd ID: their system starts with `2`, which the parse refuses (`system-reserved`).
