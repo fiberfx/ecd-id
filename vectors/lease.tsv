@@ -19,6 +19,13 @@ five-parts	emq:5:1000:2000:3	!lease-syntax
 empty-writer	emq::1000:2000	!lease-syntax
 negative	emq:-5:1000:2000	!lease-syntax
 space	emq: 5:1000:2000	!lease-syntax
+writer-2^53-1	emq:9007199254740991:1000:2000	!lease-writer
+writer-2^53	emq:9007199254740992:1000:2000	!lease-writer
+writer-u64-max	emq:18446744073709551615:1000:2000	!lease-writer
+not-after-2^53-1	emq:5:1000:9007199254740991	!lease-window
+not-after-2^53	emq:5:1000:9007199254740992	!lease-window
+not-after-u64-max	emq:5:1000:18446744073709551615	!lease-window
+window-u64-max	emq:5:18446744073709551615:18446744073709551615	!lease-window
 # writer = (grant second mod 2^17) * 2^13 + index
 # second	index	writer
 writer	1795271400	5	895287301

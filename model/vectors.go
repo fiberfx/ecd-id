@@ -224,6 +224,8 @@ func genStreamInvalid() string {
 		{"syntax-star", "evt", "*"},
 		{"syntax-u64-overflow", "evt", fmt.Sprintf("%s-1", new(big.Int).Lsh(big.NewInt(1), 64))},
 		{"syntax-space", "evt", "1 -2"},
+		{"syntax-negative-ms", "evt", fmt.Sprintf("-1-%d", emq48)},
+		{"syntax-negative-seq", "evt", "1795357800000--1"},
 	}
 	var out strings.Builder
 	out.WriteString(header)
@@ -260,6 +262,13 @@ func genLease() string {
 		{"empty-writer", "emq::1000:2000"},
 		{"negative", "emq:-5:1000:2000"},
 		{"space", "emq: 5:1000:2000"},
+		{"writer-2^53-1", fmt.Sprintf("emq:%d:1000:2000", uint64(1)<<53-1)},
+		{"writer-2^53", fmt.Sprintf("emq:%d:1000:2000", uint64(1)<<53)},
+		{"writer-u64-max", fmt.Sprintf("emq:%d:1000:2000", ^uint64(0))},
+		{"not-after-2^53-1", fmt.Sprintf("emq:5:1000:%d", uint64(1)<<53-1)},
+		{"not-after-2^53", fmt.Sprintf("emq:5:1000:%d", uint64(1)<<53)},
+		{"not-after-u64-max", fmt.Sprintf("emq:5:1000:%d", ^uint64(0))},
+		{"window-u64-max", fmt.Sprintf("emq:5:%d:%d", ^uint64(0), ^uint64(0))},
 	}
 	var out strings.Builder
 	out.WriteString(header)
