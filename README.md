@@ -123,12 +123,14 @@ A process takes its lease with `eid lease SYSTEM --store "$EID_STORE"` ([spec/cl
 
 - **0.10.1** makes the TypeScript package agree with the spec and the other three packages at two boundaries:
   `fromStreamId` refuses a negative `ms` or `seq` with `stream-range` (it wrapped a negative time to 2^48 - 1), and
-  `newLease` takes numbers up to 2^64 - 1, so one from 2^53 is refused with `lease-writer` or `lease-window` as the spec
-  says, not `lease-syntax`. The vectors gain the lease numbers 2^53 - 1, 2^53 and 2^64 - 1 and the negative stream ids
-  (`lease.tsv` 31 rows, `stream_invalid.tsv` 18), and `ts/test/api.test.ts` checks the typed calls the vectors cannot
-  reach. Python annotates with `builtins.bytes`, so its annotations hold under 3.14's deferred evaluation; the READMEs
-  name the tampered-vector row and state the scope. No Go or Rust code or registry row changed; the crate `eid` and
-  `fiberfx-eid` take 0.10.1.
+  `newLease` takes whole numbers below 2^64, so one from 2^53 is refused with `lease-writer` or `lease-window` as the
+  spec says, not `lease-syntax`. A JavaScript number is exact only to 2^53: the largest it holds below 2^64 is
+  2^64 - 2048, and `2 ** 64 - 1` evaluates to 2^64, which `newLease` refuses with `lease-syntax`; the text form
+  (`parseLease`) reads the exact value. The vectors gain the lease numbers 2^53 - 1, 2^53 and 2^64 - 1 and the negative
+  stream ids (`lease.tsv` 31 rows, `stream_invalid.tsv` 18), and `ts/test/api.test.ts` checks the typed calls the
+  vectors cannot reach. Python annotates with `builtins.bytes`, so its annotations hold under 3.14's deferred
+  evaluation; the READMEs name the tampered-vector row and state the scope. The Go model in `model/` emits the new
+  vector rows; no Go or Rust library code and no registry row changed; the crate `eid` and `fiberfx-eid` take 0.10.1.
 - **0.10.0** adds the Python package `eid` under `py/` (distribution `fiberfx-eid` 0.10.0, Python 3.12 or later,
   standard library only): parse, format, strict text, binary, the lease arithmetic, stream ids and the brd14 embedding
   with its registry layer, the scope of the TypeScript package; no minting, no registry files, no lease store, no
