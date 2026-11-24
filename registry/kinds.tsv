@@ -65,6 +65,8 @@ kan	doc	entity	live	-	document
 kan	evt	stream	live	-	event
 kan	ses	activation	live	-	session
 mxe	cor	correlation	live	-	correlation id
+mxe	itm	entity	live	-	item key in an mx-echo app's store
 mxe	req	request	live	-	request
+mxe	sto	store	live	-	the store of an mx-echo app
 mxr	req	request	live	-	request
 mxr	run	run	live	-	run

@@ -102,6 +102,26 @@ On APFS, measured on 22 Nov 2026: creating one directory for each of 2,428 mixed
 directories, because ids that differ only by letter case name one directory; creating one for each of the 2,428
 corresponding Ecd ids made 2,428. NTFS is not measured.
 
+## A home host
+
+A host that runs a system's supervisor (a system whose `home` in `registry/systems.tsv` names that host) is set up
+once:
+
+- the binary `eid` at `~/.local/bin/eid`;
+- the registry, a copy of a released `registry/` kept outside any shared mount;
+- the store, a directory outside any shared mount, one for the home;
+- `EID_HOME` (the host's own name in the registry), `EID_STORE` and `EID_REGISTRY` (the two directories), set only in
+  that host's own launch environment, such as its shell profile or its service manager's unit. A supervisor takes no
+  lease unless all three are set ([spec/registry.md](spec/registry.md)).
+
+A process takes its lease with `eid lease SYSTEM --store "$EID_STORE"` ([spec/cli.md](spec/cli.md)).
+
+### Release notes
+
+- **0.9.1** changes the registry only; no code changed. `mxe` (mx-echo applications) names `m5` as its home, and gains
+  the kinds `itm` (entity: an item key in an mx-echo application's store) and `sto` (store: that store), beside `cor`
+  and `req`. Vector rows: `mint-mxe-itm`, `mint-mxe-sto`, `mint-mxe-kind-not-registered`, `lease-mxe-other-home`.
+
 ## Status
 
 Version 1 holds the format, the reference model, the vectors and the Rust and Go libraries. Elixir and TypeScript

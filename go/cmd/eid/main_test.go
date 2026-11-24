@@ -272,6 +272,38 @@ func TestG13_LeaseTakesALeasePerCallAndMintsInsideIt(t *testing.T) {
 		"ids mint inside each, and --term sets the window")
 }
 
+func TestG13_LeaseGrantsMxeAtItsHomeAndRefusesElsewhere(t *testing.T) {
+	clock := eid.NewManualClock(now)
+	e := testEnv(clock, map[string]string{"EID_REGISTRY": registryDir(), "EID_HOME": "devbox"})
+	store := t.TempDir()
+	l := leaseOf(t, mustRun(t, e, "lease", "mxe", "--home", "m5", "--store", store, "--registry", registryDir()))
+	mxe := eid.MustCode("mxe")
+	if l.System != mxe || l.NotAfter-l.NotBefore != eid.LeaseTermMax {
+		t.Fatalf("lease %s is not a 24 hour lease of mxe", l)
+	}
+	for _, kind := range []string{"itm", "sto"} {
+		ids := idsOf(t, mustRun(t, e, "mint", "mxe", kind, "-n", "3", "--lease", l.String()))
+		if len(ids) != 3 {
+			t.Fatalf("mint mxe %s: %d ids", kind, len(ids))
+		}
+		for _, id := range ids {
+			if id.System() != mxe || id.Writer() != l.Writer {
+				t.Fatalf("%s is not inside %s", id, l)
+			}
+		}
+	}
+	absent := filepath.Join(t.TempDir(), "absent")
+	var out, errb bytes.Buffer
+	if code := run([]string{"lease", "mxe", "--home", "devbox", "--store", absent}, e, &out, &errb); code != exitRefused ||
+		out.Len() != 0 || errb.String() != "refused: not-home\n" {
+		t.Fatalf("mxe at devbox: exit %d stdout %q stderr %q", code, out.String(), errb.String())
+	}
+	if _, err := os.Stat(absent); !os.IsNotExist(err) {
+		t.Fatalf("a refusal before the store opened created %s (%v)", absent, err)
+	}
+	fmt.Println("G13: mxe is leased at home m5 and mints itm and sto inside the lease; at home devbox it is refused and the store stays absent")
+}
+
 func TestG13_LeaseRefusalsBeforeTheStoreLeaveItUntouched(t *testing.T) {
 	clock := eid.NewManualClock(now)
 	e := testEnv(clock, map[string]string{"EID_REGISTRY": registryDir(), "EID_HOME": "m5"})

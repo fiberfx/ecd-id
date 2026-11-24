@@ -7,5 +7,5 @@ ecd	ecd-core daemon	ecd-core	-	live	-
 emq	EchoMQ	-	-	live	-
 fvx	fv supervisor	-	-	live	-
 kan	KAN	-	m5	live	-
-mxe	mx-echo applications	-	-	live	-
+mxe	mx-echo applications	-	m5	live	-
 mxr	mx and mx-exec runs	-	-	live	-

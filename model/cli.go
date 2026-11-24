@@ -75,6 +75,7 @@ func genCLI() string {
 		emqLease = "emq:895287301:4102444800000:4102531200000"
 		kanLease = "kan:7:4102444800000:4102531200000"
 		detLease = "3ab:123456789:4102444800000:4102531200000"
+		mxeLease = "mxe:5:4102444800000:4102531200000"
 	)
 	minted := func(leaseStr, kind string, n int) string {
 		mt := newMinter(must(parseLease(leaseStr)))
@@ -92,6 +93,8 @@ func genCLI() string {
 	mintRow("mint-three", "emq", "job", 3, emqLease)
 	mintRow("mint-other-kind", "emq", "evt", 2, emqLease)
 	mintRow("mint-kan-doc", "kan", "doc", 2, kanLease)
+	mintRow("mint-mxe-itm", "mxe", "itm", 2, mxeLease)
+	mintRow("mint-mxe-sto", "mxe", "sto", 1, mxeLease)
 	mintRow("mint-detached-lease", "3ab", "run", 2, detLease)
 	// A detached system has no registry rows: a kind that no row names mints (spec/registry.md#lease-free).
 	mintRow("mint-detached-kind-unregistered", "3ab", "zzz", 2, detLease)
@@ -102,6 +105,7 @@ func genCLI() string {
 	}
 	// Refusals that follow from registry/: emq has no kind zzz, zzz is no system and brd is retired.
 	refused("mint-kind-not-registered", "mint emq zzz --lease "+emqLease, "kind")
+	refused("mint-mxe-kind-not-registered", "mint mxe zzz --lease "+mxeLease, "kind")
 	refused("mint-system-unknown", "mint zzz job --lease zzz:5:4102444800000:4102531200000", "unknown")
 	refused("mint-system-retired", "mint brd agt --lease brd:5:4102444800000:4102531200000", "state")
 	// Refusals that follow from the format.
@@ -133,6 +137,7 @@ func genCLI() string {
 	refused("lease-retired", "lease brd"+leaseStore, "state")
 	refused("lease-no-home", "lease emq"+leaseStore, "not-home")
 	refused("lease-other-home", "lease kan"+leaseStore+" --home box", "not-home")
+	refused("lease-mxe-other-home", "lease mxe"+leaseStore+" --home devbox", "not-home")
 
 	usage := func(name, args string) { out.WriteString(cliRow(name, args, 2, "", "*")) }
 	usage("usage-no-command", "-")
