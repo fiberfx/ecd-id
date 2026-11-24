@@ -60,10 +60,18 @@ fvx	act	activation	live	-	activation
 fvx	req	request	live	-	request
 fvx	run	run	live	-	run
 kan	agt	entity	live	-	registered principal
+kan	aus	entity	live	-	agentic user story
 kan	crs	entity	live	-	correspondence
 kan	doc	entity	live	-	document
+kan	epc	entity	live	-	epic, a set of AUS around one outcome
 kan	evt	stream	live	-	event
+kan	fea	entity	live	-	features catalogue of a program or project
+kan	pgm	entity	live	-	program node, its README
+kan	prj	entity	live	-	project node, its README
+kan	rng	entity	live	-	rung, a team execution of selected AUS
 kan	ses	activation	live	-	session
+kan	spc	entity	live	-	specification or contract
+kan	trk	entity	live	-	track node, its record
 mxe	cor	correlation	live	-	correlation id
 mxe	itm	entity	live	-	item key in an mx-echo app's store
 mxe	req	request	live	-	request

@@ -118,6 +118,12 @@ A process takes its lease with `eid lease SYSTEM --store "$EID_STORE"` ([spec/cl
 
 ### Release notes
 
+- **0.9.2** changes the registry only; no code changed. The system `kan` gains the kinds `aus` (agentic user story),
+  `fea` (features catalogue), `spc` (specification or contract), `epc` (epic), `rng` (rung), `pgm` (program node),
+  `prj` (project node) and `trk` (track node), all entities, beside `doc`; every other record of the KAN home's specs
+  stays `doc`. Vector rows: `mint-kan-aus`, `mint-kan-fea`, `mint-kan-spc`, `mint-kan-epc`, `mint-kan-rng`,
+  `mint-kan-pgm`, `mint-kan-prj`, `mint-kan-trk`, `mint-kan-kind-not-registered`. A running `eid` reads the registry
+  folder at each start, so a host takes the kinds when its `EID_REGISTRY` copy is replaced; no rebuild.
 - **0.9.1** changes the registry only; no code changed. `mxe` (mx-echo applications) names `m5` as its home, and gains
   the kinds `itm` (entity: an item key in an mx-echo application's store) and `sto` (store: that store), beside `cor`
   and `req`. Vector rows: `mint-mxe-itm`, `mint-mxe-sto`, `mint-mxe-kind-not-registered`, `lease-mxe-other-home`.

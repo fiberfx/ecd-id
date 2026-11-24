@@ -93,6 +93,10 @@ func genCLI() string {
 	mintRow("mint-three", "emq", "job", 3, emqLease)
 	mintRow("mint-other-kind", "emq", "evt", 2, emqLease)
 	mintRow("mint-kan-doc", "kan", "doc", 2, kanLease)
+	mintRow("mint-kan-aus", "kan", "aus", 2, kanLease)
+	for _, k := range []string{"fea", "spc", "epc", "rng", "pgm", "prj", "trk"} {
+		mintRow("mint-kan-"+k, "kan", k, 1, kanLease)
+	}
 	mintRow("mint-mxe-itm", "mxe", "itm", 2, mxeLease)
 	mintRow("mint-mxe-sto", "mxe", "sto", 1, mxeLease)
 	mintRow("mint-detached-lease", "3ab", "run", 2, detLease)
@@ -106,6 +110,7 @@ func genCLI() string {
 	// Refusals that follow from registry/: emq has no kind zzz, zzz is no system and brd is retired.
 	refused("mint-kind-not-registered", "mint emq zzz --lease "+emqLease, "kind")
 	refused("mint-mxe-kind-not-registered", "mint mxe zzz --lease "+mxeLease, "kind")
+	refused("mint-kan-kind-not-registered", "mint kan spe --lease "+kanLease, "kind")
 	refused("mint-system-unknown", "mint zzz job --lease zzz:5:4102444800000:4102531200000", "unknown")
 	refused("mint-system-retired", "mint brd agt --lease brd:5:4102444800000:4102531200000", "state")
 	// Refusals that follow from the format.

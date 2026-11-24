@@ -304,6 +304,31 @@ func TestG13_LeaseGrantsMxeAtItsHomeAndRefusesElsewhere(t *testing.T) {
 	fmt.Println("G13: mxe is leased at home m5 and mints itm and sto inside the lease; at home devbox it is refused and the store stays absent")
 }
 
+func TestG13_MintsTheSpecKindsOfKan(t *testing.T) {
+	clock := eid.NewManualClock(now)
+	e := testEnv(clock, map[string]string{"EID_REGISTRY": registryDir(), "EID_HOME": "m5"})
+	store := t.TempDir()
+	l := leaseOf(t, mustRun(t, e, "lease", "kan", "--store", store))
+	kan := eid.MustCode("kan")
+	for _, kind := range []string{"aus", "fea", "spc", "epc", "rng", "pgm", "prj", "trk", "doc"} {
+		ids := idsOf(t, mustRun(t, e, "mint", "kan", kind, "-n", "2", "--lease", l.String()))
+		if len(ids) != 2 {
+			t.Fatalf("mint kan %s: %d ids", kind, len(ids))
+		}
+		for _, id := range ids {
+			if id.System() != kan || id.Kind() != eid.MustCode(kind) || id.Writer() != l.Writer {
+				t.Fatalf("%s is not a kan %s inside %s", id, kind, l)
+			}
+		}
+	}
+	var out, errb bytes.Buffer
+	if code := run([]string{"mint", "kan", "spe", "--lease", l.String()}, e, &out, &errb); code != exitRefused ||
+		out.Len() != 0 || errb.String() != "refused: kind\n" {
+		t.Fatalf("mint kan spe: exit %d stdout %q stderr %q", code, out.String(), errb.String())
+	}
+	fmt.Println("G13: kan mints aus, fea, spc, epc, rng, pgm, prj and trk beside doc inside one lease; the unregistered kind spe is refused")
+}
+
 func TestG13_LeaseRefusalsBeforeTheStoreLeaveItUntouched(t *testing.T) {
 	clock := eid.NewManualClock(now)
 	e := testEnv(clock, map[string]string{"EID_REGISTRY": registryDir(), "EID_HOME": "m5"})
