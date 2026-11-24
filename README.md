@@ -48,6 +48,10 @@ go install github.com/fiberfx/ecd-id/go/cmd/eid@latest     # the command
 import eid "github.com/fiberfx/ecd-id/go"
 ```
 
+`ID` implements `encoding.TextMarshaler` and `TextUnmarshaler`, `driver.Valuer` and `sql.Scanner`, so an id is stored
+and sent without a wrapper; `NullID` serves nullable columns and JSON `null`. The zero `ID` is refused by every one of
+these encodings.
+
 ## Running the checks
 
 ```sh

@@ -127,6 +127,8 @@ of brd14's own decode.
 | pure | `to_brd14` | The count is 2^12 or more | `brd14-count` |
 | registry | both | The kind has no row of the system `brd` | `brd14-kind` |
 
+- Go's `ToBrd14` on a bare `ID` applies the binary ingress checks of `FromBytes` (reserved bits, system class and kind)
+  before it converts, and refuses with the reason of the failing check.
 - `to_brd14` needs no check of the kind: the kind of a valid id is three letters, and their uppercase form is a
   namespace.
 - For `brd14-kind`, a row in any state counts: a closed or retired kind stays readable.

@@ -161,13 +161,14 @@ pub fn detached_lease(random: &dyn RandomSource, clock: &dyn Clock, keep: Option
 }
 
 fn draw_detached_code(random: &dyn RandomSource) -> Result<Code, Refusal> {
-    // Rejection sampling keeps the five first characters equally likely.
+    // Each draw reads one 16-bit value v from the source. A value of 61440 (12 x 5120) or more is drawn again, at
+    // most 64 times in all; otherwise the code is 1024 + v mod 5120, so each of the 5,120 detached codes (3 to 7 as
+    // first character) is equally likely and a draw is rejected with probability 1/16.
     for _ in 0..64 {
         let mut b = [0u8; 2];
         random.fill(&mut b)?;
-        if let Some(c) = Code::from_bits(u16::from_be_bytes(b) & 0x7fff)
-            && c.class() == Class::Detached
-        {
+        let v = u16::from_be_bytes(b);
+        if v < 61440 && let Some(c) = Code::from_bits(1024 + v % 5120) {
             return Ok(c);
         }
     }

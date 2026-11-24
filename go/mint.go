@@ -152,14 +152,20 @@ func DetachedLease(r RandomSource, clock Clock, keep *Code) (Lease, error) {
 		}
 		system = *keep
 	} else {
+		// Each draw reads one 16-bit value v from the source. A value of 61440 (12 x 5120) or more is drawn again,
+		// at most 64 times in all; otherwise the code is 1024 + v mod 5120, so each of the 5,120 detached codes
+		// (3 to 7 as first character) is equally likely and a draw is rejected with probability 1/16.
 		found := false
 		for i := 0; i < 64 && !found; i++ {
 			var b [2]byte
 			if err := r.Fill(b[:]); err != nil {
 				return Lease{}, err
 			}
-			system = Code(binary.BigEndian.Uint16(b[:]) & 0x7fff)
-			found = system.Class() == Detached
+			v := binary.BigEndian.Uint16(b[:])
+			if v < 61440 {
+				system = Code(1024 + v%5120)
+				found = true
+			}
 		}
 		if !found {
 			return Lease{}, ErrRandom
