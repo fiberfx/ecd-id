@@ -48,9 +48,12 @@ go install github.com/fiberfx/ecd-id/go/cmd/eid@latest     # the command
 import eid "github.com/fiberfx/ecd-id/go"
 ```
 
-`ID` implements `encoding.TextMarshaler` and `TextUnmarshaler`, `driver.Valuer` and `sql.Scanner`, so an id is stored
-and sent without a wrapper; `NullID` serves nullable columns and JSON `null`. The zero `ID` is refused by every one of
-these encodings.
+`ID` implements `encoding.TextMarshaler` and `TextUnmarshaler`, `driver.Valuer` and `sql.Scanner`, and `json.Unmarshaler`,
+so an id is stored and sent without a wrapper; `NullID` serves nullable columns and JSON `null`. The zero `ID` is refused
+when encoded, and a JSON null is refused when decoded into an `ID`; a missing JSON field leaves an `ID` unchanged, so
+nullable or optional fields use `NullID`. The encodings refuse with `zero` (the zero ID encoded, or JSON null decoded
+into an ID), `scan-type` (a Scan source that is not []byte) and `json-type` (a JSON value that is neither a string nor,
+for NullID, null).
 
 ## Running the checks
 

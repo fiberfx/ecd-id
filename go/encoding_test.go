@@ -176,6 +176,33 @@ func TestEncodingJSON(t *testing.T) {
 	}
 }
 
+func TestEncodingJSONNullAndType(t *testing.T) {
+	id := encodingSample(t)
+	got := encodingRecord{ID: id}
+	if err := json.Unmarshal([]byte(`{"id":null}`), &got); !errors.Is(err, ErrZero) {
+		t.Fatalf("null into an ID: %v", err)
+	}
+	if got.ID != id {
+		t.Fatal("a refused null changed the id")
+	}
+	if err := json.Unmarshal([]byte(`{"id":5}`), &got); !errors.Is(err, ErrJSONType) {
+		t.Fatalf("a number into an ID: %v", err)
+	}
+	if got.ID != id {
+		t.Fatal("a refused number changed the id")
+	}
+	text := `{"id":"` + id.String() + `"}`
+	var quoted encodingRecord
+	if err := json.Unmarshal([]byte(text), &quoted); err != nil || quoted.ID != id {
+		t.Fatalf("a quoted text into an ID: %v, %v", quoted, err)
+	}
+	var missing encodingRecord
+	missing.ID = id
+	if err := json.Unmarshal([]byte(`{}`), &missing); err != nil || missing.ID != id {
+		t.Fatalf("a missing field: %v, %v", missing, err)
+	}
+}
+
 func TestEncodingNullIDJSON(t *testing.T) {
 	id := encodingSample(t)
 	b, err := json.Marshal(encodingNullable{})
@@ -193,6 +220,10 @@ func TestEncodingNullIDJSON(t *testing.T) {
 	var present encodingNullable
 	if err := json.Unmarshal(b, &present); err != nil || !present.ID.Valid || present.ID.ID != id {
 		t.Fatalf("present back: %v, %v", present, err)
+	}
+	over := encodingNullable{ID: NullID{ID: id, Valid: true}}
+	if err := json.Unmarshal([]byte(`{"id":null}`), &over); err != nil || over.ID.Valid {
+		t.Fatalf("null over a valid id through encoding/json: %v, %v", over, err)
 	}
 	n := NullID{ID: id, Valid: true}
 	if err := n.UnmarshalJSON([]byte(" null ")); err != nil || n.Valid {

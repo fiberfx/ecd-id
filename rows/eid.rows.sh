@@ -246,7 +246,7 @@ if [ "$golang" = built ]; then
 	mrc=$?
 	grep -E -m4 -- '--- FAIL|zero' "$L/encodings-mutant.log" | cut -c1-220 | sed 's/^/  encodings mutant: /'
 	if [ $crc -eq 0 ] && [ "$changed" -gt 0 ] && [ $mrc -ne 0 ] && grep -q -- '^--- FAIL: TestEncodingZeroRefused' "$L/encodings-mutant.log"; then
-		row eid-encodings-control PASS "go: the unmodified scratch copy passes; the zero refusal of MarshalText removed ($changed bytes): TestEncodingZeroRefused fails, rc=$mrc"
+		row eid-encodings-control PASS "go: the unmodified scratch copy passes; the zero refusal of MarshalText removed ($changed differing byte positions): TestEncodingZeroRefused fails, rc=$mrc"
 	else
 		row eid-encodings-control FAIL "unmodified rc=$crc, bytes changed=$changed, mutant rc=$mrc"
 	fi

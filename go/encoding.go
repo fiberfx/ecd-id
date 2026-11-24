@@ -25,8 +25,30 @@ func (id ID) MarshalText() ([]byte, error) {
 }
 
 // UnmarshalText parses the canonical text with the strict parse. On a refusal *id is unchanged.
+// encoding/json uses UnmarshalJSON for an ID, not this method.
 func (id *ID) UnmarshalText(b []byte) error {
 	v, err := Parse(b)
+	if err != nil {
+		return err
+	}
+	*id = v
+	return nil
+}
+
+// UnmarshalJSON parses a JSON string; null is ErrZero and other types ErrJSONType (NullID serves nullable fields).
+func (id *ID) UnmarshalJSON(b []byte) error {
+	b = bytes.TrimSpace(b)
+	if string(b) == "null" {
+		return ErrZero
+	}
+	if len(b) == 0 || b[0] != '"' {
+		return ErrJSONType
+	}
+	var s string
+	if err := json.Unmarshal(b, &s); err != nil {
+		return ErrJSONType
+	}
+	v, err := ParseString(s)
 	if err != nil {
 		return err
 	}

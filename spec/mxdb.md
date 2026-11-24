@@ -24,9 +24,10 @@ example `emq_sys_22222222222222222222` is `54ad8f60` followed by 12 zero bytes.
 
 ## Derived names
 
-A name derived rather than minted has time 0. Its writer and count come from a 48-bit hash of what it names. No
+A name derived rather than minted has time 0. Its writer and count come from a 48-bit hash of what it names. The hash
+and the order of its bits are the deriving system's own; the writer takes the high 30 bits and the count the low 18. No
 minted id equals it, since every lease starts at time 1 or later ([lease.md](lease.md#the-lease)). The system's own id
-is the derived name whose hash is zero.
+is the derived name of kind `sys` whose hash is zero.
 
 ## "None"
 
