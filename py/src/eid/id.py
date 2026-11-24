@@ -1,5 +1,6 @@
 """The Ecd ID: the 16-byte layout, the alphabet, the canonical text and its strict parse (spec/id.md)."""
 
+import builtins
 from collections.abc import Buffer
 from typing import Literal, cast
 
@@ -136,7 +137,7 @@ class Eid:
     """
 
     __slots__ = ("_b",)
-    _b: bytes
+    _b: builtins.bytes
 
     def __init__(self, data: Buffer) -> None:
         if not isinstance(data, Buffer):
@@ -158,7 +159,7 @@ class Eid:
     def __delattr__(self, name: str) -> None:
         raise AttributeError("an Eid is immutable")
 
-    def __reduce__(self) -> tuple[type["Eid"], tuple[bytes]]:
+    def __reduce__(self) -> tuple[type["Eid"], tuple[builtins.bytes]]:
         return (Eid, (self._b,))
 
     @property
@@ -213,7 +214,7 @@ class Eid:
     def __repr__(self) -> str:
         return f"eid.parse({_encode_text(self._b)!r})"
 
-    def __bytes__(self) -> bytes:
+    def __bytes__(self) -> builtins.bytes:
         return self._b
 
     def __eq__(self, other: object) -> bool:
@@ -244,9 +245,11 @@ class Eid:
     def __hash__(self) -> int:
         return hash(self._b)
 
-    # Last in the class body, so that no annotation above reads the property in place of the built-in type.
+    # The property's name shadows the built-in in the class namespace. Python 3.14 evaluates annotations when they are
+    # read (PEP 649, PEP 749), in that namespace, so every annotation in this class names builtins.bytes; the property
+    # stays last, which also keeps the eager annotations of Python 3.12 and 3.13 on the built-in.
     @property
-    def bytes(self) -> bytes:
+    def bytes(self) -> builtins.bytes:
         """The 16 bytes."""
         return self._b
 

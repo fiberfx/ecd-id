@@ -35,7 +35,7 @@ emq_job_23obzcbapvupu2272222      system emq, kind job, 2026-11-21T14:30:00.123Z
 | `py/` | Python package `eid` (distribution `fiberfx-eid`): parse, format, binary, leases and stream ids over the same vectors, and the brd14 embedding; standard library only, no minting, no registry ([py/README.md](py/README.md)) |
 | `rows/eid.rows.sh` | The gates, run from the root of the tree: the checks above and each property with its control, as one row per property |
 | `rows/eid-ts.rows.sh` | The TypeScript package's rows: `bun test` over every vector row, the brd14 embedding, `tsc --noEmit` (strict) and three planted mutants |
-| `rows/eid-py.rows.sh` | The Python package's rows: `python3` 3.12 or later, `unittest` over every vector row, the brd14 embedding and three planted mutants |
+| `rows/eid-py.rows.sh` | The Python package's rows: `python3` 3.12 or later, `unittest` over every vector row, the brd14 embedding, three planted mutants and a tampered vector (`eid-py-tampered-vector`) |
 
 ## Go module
 
@@ -138,8 +138,9 @@ A process takes its lease with `eid lease SYSTEM --store "$EID_STORE"` ([spec/cl
 
 ## Status
 
-Version 1 holds the format, the reference model, the vectors and the Rust and Go libraries. Elixir and TypeScript
-libraries, generated kind constants and subsystem adoption are out of scope for version 1.
+Version 1 holds the format, the reference model, the vectors and the Rust and Go libraries. An Elixir library, generated
+kind constants and subsystem adoption are out of scope for version 1; the tree holds no Elixir code.
 
-The Python package follows the TypeScript package's scope: it parses, formats and converts ids, leases and stream ids
-over the same vectors, and embeds brd14 ids; it does not mint and holds no registry.
+The TypeScript package (`ts/`) and the Python package (`py/`) follow the same vectors with a narrower scope: they parse,
+format and convert ids, leases and stream ids, and embed brd14 ids; they do not mint and hold no registry. Both are
+private until a publish is decided.

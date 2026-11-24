@@ -120,4 +120,6 @@ one refused case for each function where the vectors leave a gap, and check the 
 (immutability, hashing, ordering, pickling).
 
 `../rows/eid-py.rows.sh` runs the tests, the brd14 test on its own and planted mutants (two alphabet characters swapped;
-the pad check removed; writer and count swapped in `from_brd14`), each of which must make the tests fail.
+the pad check removed; writer and count swapped in `from_brd14`), each of which must make the tests fail. Its row
+`eid-py-tampered-vector` changes one hex digit of the bytes column in the first data row of `../vectors/valid.tsv` in a
+scratch copy; the tests must fail on that copy.
