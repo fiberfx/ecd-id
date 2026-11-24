@@ -24,6 +24,13 @@
 #   eid-brd14-control    go: the unmodified scratch copy passes G14; with writer and count swapped in FromBrd14, G14 fails
 #   eid-registry-retired-control  a scratch copy of registry/ passes eid-registry-retired unmodified and fails it, in Go
 #                        and Rust, with brd crs turned back to live
+#   eid-encodings        go: MarshalText/UnmarshalText, Value/Scan and NullID with JSON round-trip every line of
+#                        vectors/valid.tsv; every line of vectors/invalid.tsv is refused as Parse refuses it; the zero
+#                        id is refused (ErrZero)
+#   eid-encodings-control  go: the unmodified scratch copy passes the encodings; with the zero refusal of MarshalText
+#                        removed by one sed, they fail
+#   eid-detached-draw    one 16-bit draw, r >= 61440 rejected, code 1024 + r mod 5120; Rust and Go agree; 64 rejections
+#                        refused
 #   eid-store       G12  go: two processes x 1000 grants on one FileStore give 2000 distinct writers; control: no lock
 #   eid-cli         G13  go: the command eid against vectors/cli.tsv, in process; stores, refusals, detached
 #   eid-bin              go: eid built for linux-arm64 and darwin-arm64 (CGO off), each twice with one sha256, the
@@ -193,6 +200,7 @@ gate eid-one-case g11_ '^TestG11' "canonical text in the vectors is one case; up
 gate eid-registry registry_ '^TestRegistry' "registry files load; faults refused"
 gate eid-registry-retired registry_retired '^TestRegistryRetired' "every kind row of a retired system is retired; ecd sto present and live"
 gate eid-brd14 g14_ '^TestG14' "vectors/brd14.tsv both ways, pure and registry layer, every reason; order pairwise; 1e5 random ids return"
+gate eid-detached-draw detached_draw '^TestDetachedDraw' "one 16-bit draw, r >= 61440 rejected, code 1024 + r mod 5120; Rust and Go agree; 64 rejections refused"
 
 # gogate KEY GO_PATTERN DESCRIPTION: a gate that only the Go module has.
 gogate() {
@@ -201,6 +209,7 @@ gogate() {
 }
 gogate eid-store '^TestG12' "FileStore: record on disk, one activation per system, 2 processes x 1000 grants give 2000 distinct writers; control without the lock repeats"
 gogate eid-cli '^TestG13' "eid against vectors/cli.tsv in process; stores take a lease per call; refusals; detached"
+gogate eid-encodings '^TestEncoding' "MarshalText/UnmarshalText, Value/Scan, NullID with JSON; the zero id refused"
 
 # The violating case of eid-brd14: a scratch copy of go/ passes G14 unmodified, and fails it with writer and count
 # swapped in FromBrd14.
@@ -222,6 +231,28 @@ if [ "$golang" = built ]; then
 	rm -rf "$M"
 else
 	row eid-brd14-control FAIL "go=$golang"
+fi
+
+# The violating case of eid-encodings: a scratch copy of go/ passes the encodings unmodified, and fails them with the
+# zero refusal of MarshalText removed (the one line "if id == (ID{}) {" becomes "if false {").
+if [ "$golang" = built ]; then
+	M=$(mktemp -d /tmp/eid-encodings-mutant.XXXXXX)
+	cp -r "$W/go" "$W/vectors" "$M/"
+	(cd "$M/go" && go test -count=1 -v -run '^TestEncoding' .) >"$L/encodings-unmodified.log" 2>&1
+	crc=$?
+	sed -i 's/if id == (ID{}) {/if false {/' "$M/go/encoding.go"
+	changed=$(cmp -l "$W/go/encoding.go" "$M/go/encoding.go" 2>/dev/null | wc -l)
+	(cd "$M/go" && go test -count=1 -v -run '^TestEncoding' .) >"$L/encodings-mutant.log" 2>&1
+	mrc=$?
+	grep -E -m4 -- '--- FAIL|zero' "$L/encodings-mutant.log" | cut -c1-220 | sed 's/^/  encodings mutant: /'
+	if [ $crc -eq 0 ] && [ "$changed" -gt 0 ] && [ $mrc -ne 0 ] && grep -q -- '^--- FAIL: TestEncodingZeroRefused' "$L/encodings-mutant.log"; then
+		row eid-encodings-control PASS "go: the unmodified scratch copy passes; the zero refusal of MarshalText removed ($changed bytes): TestEncodingZeroRefused fails, rc=$mrc"
+	else
+		row eid-encodings-control FAIL "unmodified rc=$crc, bytes changed=$changed, mutant rc=$mrc"
+	fi
+	rm -rf "$M"
+else
+	row eid-encodings-control FAIL "go=$golang"
 fi
 
 # The violating case of eid-registry-retired: a scratch copy passes its tests in Go and Rust unmodified, and fails them
