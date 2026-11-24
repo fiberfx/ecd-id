@@ -52,12 +52,14 @@ export function legacyTail(id: Eid): number {
 
 /**
  * Rebuilds an id from a stream entry id and the kind the stream carries. Refuses with `kind`, `stream-range`
- * (`ms` at least 2^48 or `seq` at least 2^63) or `system-reserved`.
+ * (`ms` at least 2^48 or `seq` at least 2^63, or either negative) or `system-reserved`.
  */
 export function fromStreamId(kind: string, sid: StreamId): Eid {
   const k = parseCode(kind);
   if (k === undefined || !isKind(k)) throw new Refusal('kind');
-  if (sid.ms > BigInt(TIME_MAX) || sid.seq >= 1n << 63n) throw new Refusal('stream-range');
+  if (sid.ms < 0n || sid.ms > BigInt(TIME_MAX) || sid.seq < 0n || sid.seq >= 1n << 63n) {
+    throw new Refusal('stream-range');
+  }
   const system = Number(sid.seq >> 48n);
   if (codeClass(system) === 'reserved') throw new Refusal('system-reserved');
   const writer = Number((sid.seq >> 18n) & BigInt(WRITER_MAX));
