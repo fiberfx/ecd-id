@@ -121,6 +121,11 @@ A process takes its lease with `eid lease SYSTEM --store "$EID_STORE"` ([spec/cl
 
 ### Release notes
 
+- **0.10.0** adds the Python package `eid` under `py/` (distribution `fiberfx-eid` 0.10.0, Python 3.12 or later,
+  standard library only): parse, format, strict text, binary, the lease arithmetic, stream ids and the brd14 embedding
+  with its registry layer, the scope of the TypeScript package; no minting, no registry files, no lease store, no
+  command. `rows/eid-py.rows.sh` runs its tests over every data row of seven vector files, three planted mutants and a
+  tampered vector. No Go, Rust or TypeScript code, vector or registry row changed; the crate `eid` takes 0.10.0.
 - **0.9.2** changes the registry only; no code changed. The system `kan` gains the kinds `aus` (agentic user story),
   `fea` (features catalogue), `spc` (specification or contract), `epc` (epic), `rng` (rung), `pgm` (program node),
   `prj` (project node) and `trk` (track node), all entities, beside `doc`; every other record of the KAN home's specs
