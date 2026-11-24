@@ -32,8 +32,10 @@ emq_job_23obzcbapvupu2272222      system emq, kind job, 2026-11-21T14:30:00.123Z
 | `rs/` | Rust workspace, crate `eid`: standard library only, `unsafe` forbidden |
 | `go/` | Go module `github.com/fiberfx/ecd-id/go` (package `eid`): standard library only; `go/cmd/eid` is the command, `go/filestore.go` the lease store in a directory |
 | `ts/` | TypeScript package `@fiberfx/eid` (private): parse, format, binary, leases and stream ids over the same vectors, and the brd14 embedding; no runtime dependencies, no minting, no registry ([ts/README.md](ts/README.md)) |
+| `py/` | Python package `eid` (distribution `fiberfx-eid`): parse, format, binary, leases and stream ids over the same vectors, and the brd14 embedding; standard library only, no minting, no registry ([py/README.md](py/README.md)) |
 | `rows/eid.rows.sh` | The gates, run from the root of the tree: the checks above and each property with its control, as one row per property |
 | `rows/eid-ts.rows.sh` | The TypeScript package's rows: `bun test` over every vector row, the brd14 embedding, `tsc --noEmit` (strict) and three planted mutants |
+| `rows/eid-py.rows.sh` | The Python package's rows: `python3` 3.12 or later, `unittest` over every vector row, the brd14 embedding and three planted mutants |
 
 ## Go module
 
@@ -64,6 +66,7 @@ for NullID, null).
 (cd go && go build ./cmd/eid)                 # the command, as ./eid
 sh rows/eid.rows.sh                          # every gate as one row, each with its control, and the builds of eid
 sh rows/eid-ts.rows.sh                       # TypeScript: bun test over the vectors, tsc --noEmit, mutants
+sh rows/eid-py.rows.sh                       # Python: unittest over the vectors, brd14, mutants
 ```
 
 `(cd model && go run .)` regenerates `vectors/`.
@@ -132,3 +135,6 @@ A process takes its lease with `eid lease SYSTEM --store "$EID_STORE"` ([spec/cl
 
 Version 1 holds the format, the reference model, the vectors and the Rust and Go libraries. Elixir and TypeScript
 libraries, generated kind constants and subsystem adoption are out of scope for version 1.
+
+The Python package follows the TypeScript package's scope: it parses, formats and converts ids, leases and stream ids
+over the same vectors, and embeds brd14 ids; it does not mint and holds no registry.
