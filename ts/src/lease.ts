@@ -30,7 +30,7 @@ function window(notBefore: bigint, notAfter: bigint): boolean {
 
 /**
  * A lease, checked as the text form is checked. Refuses with `lease-syntax` (a system that is not three
- * alphabet characters, a number that is not a non-negative integer), `lease-system`, `lease-writer` or
+ * alphabet characters, a number that is not an integer from 0 to 2^64 - 1), `lease-system`, `lease-writer` or
  * `lease-window`.
  */
 export function newLease(
@@ -43,8 +43,9 @@ export function newLease(
   if (code === undefined || !Number.isInteger(code) || code < 0 || code >= 1 << 15) {
     throw new Refusal('lease-syntax');
   }
+  // A number from 2^53 is not exact, but every one fails the writer or the window check, as the text form does.
   for (const n of [writer, notBefore, notAfter]) {
-    if (!Number.isSafeInteger(n) || n < 0) throw new Refusal('lease-syntax');
+    if (!Number.isInteger(n) || n < 0 || n >= 2 ** 64) throw new Refusal('lease-syntax');
   }
   if (codeClass(code) === 'reserved') throw new Refusal('lease-system');
   if (writer > WRITER_MAX) throw new Refusal('lease-writer');

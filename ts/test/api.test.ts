@@ -225,6 +225,8 @@ describe('stream ids', () => {
     expect(outcome(() => fromStreamId('j0b', { ms: 1n, seq: 1n << 48n }))).toBe('kind');
     expect(outcome(() => fromStreamId('job', { ms: 1n << 48n, seq: 1n << 48n }))).toBe('stream-range');
     expect(outcome(() => fromStreamId('job', { ms: 1n, seq: 1n << 63n }))).toBe('stream-range');
+    expect(outcome(() => fromStreamId('job', { ms: -1n, seq: 1n << 58n }))).toBe('stream-range');
+    expect(outcome(() => fromStreamId('job', { ms: 1n, seq: -1n }))).toBe('stream-range');
   });
 
   test('valkeyAccepts: greater than the top and not 0-0', () => {
@@ -257,6 +259,12 @@ describe('leases', () => {
     expect(outcome(() => newLease('emq', 1, 1000, 1000 + 86_400_000))).toBe('ok');
     expect(outcome(() => newLease('emq', 1, 1000, 1001 + 86_400_000))).toBe('lease-window');
     expect(outcome(() => newLease('emq', 1, 1000, 2 ** 48))).toBe('lease-window');
+    // from 2^53 a number is refused by the writer or the window, as in the text form; 2^64 - 2048 is the largest below 2^64
+    expect(outcome(() => newLease('emq', 2 ** 53, 1000, 2000))).toBe('lease-writer');
+    expect(outcome(() => newLease('emq', 1, 1000, 2 ** 53))).toBe('lease-window');
+    expect(outcome(() => newLease('emq', 1, 2 ** 60, 2 ** 60))).toBe('lease-window');
+    expect(outcome(() => newLease('emq', 1, 1000, 2 ** 64 - 2048))).toBe('lease-window');
+    expect(outcome(() => newLease('emq', 1, 1000, 2 ** 64))).toBe('lease-syntax');
   });
 
   test('parseLease refuses numbers of 21 digits, 2^64, plus signs, fractions and empty text', () => {
