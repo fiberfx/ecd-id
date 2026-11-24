@@ -134,6 +134,7 @@ A process takes its lease with `eid lease SYSTEM --store "$EID_STORE"` ([spec/cl
 ## Status
 
 Version 1 holds the format, the reference model, the vectors and the Rust and Go libraries. Elixir and TypeScript
-libraries, generated kind constants and subsystem adoption are out of scope for version 1. The Python package follows
-the TypeScript package's scope: it parses, formats and converts ids, leases and stream ids over the same vectors, and
-embeds brd14 ids; it does not mint and holds no registry.
+libraries, generated kind constants and subsystem adoption are out of scope for version 1.
+
+The Python package follows the TypeScript package's scope: it parses, formats and converts ids, leases and stream ids
+over the same vectors, and embeds brd14 ids; it does not mint and holds no registry.

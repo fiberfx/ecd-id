@@ -14,6 +14,10 @@
 #                   characters swapped, the pad check removed, writer and count swapped in the brd14 embedding) is
 #                   built by one sed in a fresh scratch copy and must make the tests fail; a patch that does not change
 #                   exactly one line is could-not-measure
+#   eid-py-tampered-vector
+#                   in a fresh scratch copy, one hex digit of the bytes column of the first data row of
+#                   vectors/valid.tsv is changed by one sed (could-not-measure unless exactly one line changes,
+#                   or when the mutants row's control did not pass); the suite must FAIL on that copy
 # Exit: 0 no FAIL and no COULD-NOT-MEASURE; 1 any FAIL; 2 a COULD-NOT-MEASURE and no FAIL.
 set -u
 W=$(pwd)
@@ -90,6 +94,7 @@ if [ "$havePy" -eq 1 ] && [ -d "$W/py" ]; then
 	if [ $rc -ne 0 ]; then trouble "$L/test.log" 80 "unittest: "; fi
 	files=0
 	short=0
+	counts=""
 	for f in valid invalid binary_invalid stream stream_invalid lease brd14; do
 		vec "$L/test.log" "$f"
 		if [ -z "$va" ]; then
@@ -104,11 +109,14 @@ if [ "$havePy" -eq 1 ] && [ -d "$W/py" ]; then
 			echo "  $f.tsv: checked $va of $vb, the file has $d"
 		fi
 		files=$((files + 1))
+		case "$f" in valid | invalid | stream) counts="${counts:+$counts, }$f.tsv $va/$vb" ;; esac
 	done
 	if [ $rc -eq 0 ] && [ "${ran:-0}" -gt 0 ] && [ $short -eq 0 ] && [ $files -eq 7 ]; then
-		row eid-py-test PASS "unittest: $ran tests OK (skipped ${skipped:-0}); 7 vector files, every data row checked"
+		msg="unittest: $ran tests OK (skipped ${skipped:-0}); 7 vector files, every data row checked"
+		row eid-py-test PASS "$msg; VECTORS $counts"
 	else
-		row eid-py-test FAIL "rc=$rc ran=${ran:-?} failing=${nf:-?} vector files with a line=$files short=$short"
+		msg="rc=$rc ran=${ran:-?} failing=${nf:-?} vector files with a line=$files short=$short"
+		row eid-py-test FAIL "$msg; VECTORS $counts"
 	fi
 elif [ "$havePy" -eq 0 ]; then
 	row eid-py-test COULD-NOT-MEASURE "python3 is absent"
@@ -203,6 +211,41 @@ elif [ "$havePy" -eq 0 ]; then
 	row eid-py-mutants COULD-NOT-MEASURE "python3 is absent"
 else
 	row eid-py-mutants FAIL "no py/"
+fi
+
+# ---- a tampered vector: one hex digit of the first data row of vectors/valid.tsv, in a fresh copy
+if [ "$havePy" -eq 1 ] && [ -d "$W/py" ]; then
+	TAB=$(printf '\t')
+	n=$(grep -n '^[^#]' "$W/vectors/valid.tsv" 2>/dev/null | head -1 | cut -d: -f1)
+	if [ -z "$n" ]; then
+		row eid-py-tampered-vector COULD-NOT-MEASURE "vectors/valid.tsv has no data row"
+	elif [ "$crc" -ne 0 ]; then
+		row eid-py-tampered-vector COULD-NOT-MEASURE "the unmodified control did not pass, so a failing copy proves nothing"
+	else
+		copy "$L/tampered"
+		# the first hex digit of the bytes column becomes 0, or 1 when it is 0 already
+		sed -i -e "${n}s/^\([^$TAB]*$TAB\)[1-9a-f]/\10/;t" -e "${n}s/^\([^$TAB]*$TAB\)0/\11/" "$L/tampered/vectors/valid.tsv"
+		n2=$(diff "$W/vectors/valid.tsv" "$L/tampered/vectors/valid.tsv" | grep -c '^[<>]')
+		was=$(sed -n "${n}p" "$W/vectors/valid.tsv" | cut -f2 | cut -c1-8)
+		now=$(sed -n "${n}p" "$L/tampered/vectors/valid.tsv" | cut -f2 | cut -c1-8)
+		if [ "$n2" -ne 2 ]; then
+			row eid-py-tampered-vector COULD-NOT-MEASURE "the patch changed $((n2 / 2)) lines, not exactly 1"
+		else
+			unit "$L/tampered" "$L/tampered.log"
+			rc=$?
+			summary "$L/tampered.log"
+			echo "  tampered row $n of vectors/valid.tsv, bytes $was... to $now...: unittest rc=$rc failing=${nf:-?}"
+			if [ $rc -ne 0 ] && [ "${ran:-0}" -gt 0 ] && [ "${nf:-0}" -gt 0 ]; then
+				row eid-py-tampered-vector PASS "the suite fails ($nf failing) with one hex digit of valid.tsv row $n changed"
+			else
+				row eid-py-tampered-vector FAIL "unittest rc=$rc ran=${ran:-?} failing=${nf:-?} on a changed vector row"
+			fi
+		fi
+	fi
+elif [ "$havePy" -eq 0 ]; then
+	row eid-py-tampered-vector COULD-NOT-MEASURE "python3 is absent"
+else
+	row eid-py-tampered-vector FAIL "no py/"
 fi
 
 PROBE_PYC=$(find "$W/py" -name __pycache__ -type d 2>/dev/null | wc -l | tr -d " ")
