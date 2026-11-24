@@ -166,7 +166,7 @@ func TestG13_MintFromAStoreTakesALeasePerCall(t *testing.T) {
 	if len(writers) != 3 {
 		t.Fatalf("%d writers for 3 calls", len(writers))
 	}
-	fmt.Printf("G13: 3 calls on one store (2 of them inside one grant second) mint %d distinct ids, rising, on 3 writers\n",
+	fmt.Printf("G13: 3 calls on one store (2 of them in the last grant's second) mint %d distinct ids, rising, on 3 writers\n",
 		len(all))
 }
 
@@ -268,7 +268,7 @@ func TestG13_LeaseTakesALeasePerCallAndMintsInsideIt(t *testing.T) {
 	if short.NotAfter-short.NotBefore != 5000 || writers[short.Writer] {
 		t.Fatalf("--term 5000: %s", short)
 	}
-	fmt.Println("G13: 3 lease calls on one store (2 of them inside one grant second) print 3 distinct writers of 24 hours, " +
+	fmt.Println("G13: 3 lease calls on one store (2 of them in the last grant's second) print 3 distinct writers of 24 hours, " +
 		"ids mint inside each, and --term sets the window")
 }
 

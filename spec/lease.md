@@ -1,8 +1,9 @@
 # Leases, the allocator, the minter and the door
 
-A producer mints ids with no round trip per id. It holds a **lease** from its system: one writer number and a window
-of id-time it alone may stamp. Inside the lease it mints locally; the allocator is asked once per process start and
-then about every 12 hours.
+A producer mints ids with no round trip per id. It holds a **lease** from its system: one writer number and a window of
+id-time it alone may stamp. Inside the lease it mints locally. The allocator is asked at each process start; a minter
+with a route to a fresh lease asks again past half its term (about every 12 hours for a 24-hour lease), and one without
+keeps its lease to its end, then mints detached ([the minter](#minter)).
 
 <a id="premises"></a>
 
@@ -38,8 +39,7 @@ still stamps inside its own window.
 - One lease goes to one process.
 - **A process that reads `EID_LEASE` removes it from its environment, or from the environment of every child it
   starts, before it starts one.** A child that the process execs with its environment would read the variable, build
-  its own minter under its own pid and share the lease; the pid guard ([below](#pid-guard)) does not see it. A process
-  that cannot change its own environment removes the variable from each child's environment instead.
+  its own minter under its own pid and share the lease; the pid guard ([below](#pid-guard)) does not see it.
 - **A process declared as the holder of a lease is its only reader.** A process declared with `eid:` (the key and the
   `--eid` flag of fv) is the only reader of its lease; a wrapper that starts several readers, or restarts its child,
   must not be declared with `eid:`. A supervisor cannot check this, so it is a rule for whoever writes the stack.

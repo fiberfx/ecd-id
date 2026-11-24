@@ -16,7 +16,8 @@
 #   eid-mxdb        G9   owner, store and database encodings; all-zero refused; no time-0 mint
 #   eid-door        G10  detached ids bound, never stored as own; control: no door
 #   eid-one-case    G11  the canonical text is one case (the vectors)
-#   eid-casefold    G11  directories on a case-folding file system: COULD-NOT-MEASURE in a Linux container
+#   eid-casefold    G11  directories on a case-folding file system: COULD-NOT-MEASURE in a Linux container; measured
+#                        on such a host by rows/eid-casefold.sh
 #   eid-registry         the registry files load; faults refused
 #   eid-registry-retired every kind row of a retired system is retired (the 39 of brd); ecd sto is present and live
 #   eid-brd14       G14  brd14 ids embed into brd ids: Rust and Go agree with every row of vectors/brd14.tsv both ways, pure
@@ -35,8 +36,9 @@
 #   eid-cli         G13  go: the command eid against vectors/cli.tsv, in process; stores, refusals, detached
 #   eid-lease            go: TakeLease on a FileStore: distinct writers per call, the activation released, refusals; control: the
 #                        start-wait removed repeats a writer (the command's lease tests are in eid-cli)
-#   eid-bin              go: eid built for linux-arm64 and darwin-arm64 (CGO off), each twice with one sha256, the
-#                        vectors run against a linux-amd64 build; the two binaries are printed as gzip+base64
+#   eid-bin              go: eid built for linux-arm64, darwin-arm64 and linux-amd64 (CGO off), each twice with one
+#                        sha256; the vectors run against the linux-amd64 build; the three binaries are printed as
+#                        gzip+base64 between BIN-BEGIN and BIN-END lines
 # Exit: 0 no FAIL and no unexpected COULD-NOT-MEASURE; 1 any FAIL; 2 an unexpected COULD-NOT-MEASURE.
 set -u
 W=$(pwd)
@@ -317,12 +319,13 @@ if [ "$golang" = built ]; then
 	if [ $binok -eq 1 ]; then
 		sum_arm=$(sha256sum "$B/linux-arm64.a" | cut -d' ' -f1)
 		sum_mac=$(sha256sum "$B/darwin-arm64.a" | cut -d' ' -f1)
-		for t in linux-arm64 darwin-arm64; do
+		sum_amd=$(sha256sum "$B/linux-amd64.a" | cut -d' ' -f1)
+		for t in linux-arm64 darwin-arm64 linux-amd64; do
 			echo "BIN-BEGIN $t sha256=$(sha256sum "$B/$t.a" | cut -d' ' -f1) size=$(stat -c %s "$B/$t.a")"
 			gzip -9n -c "$B/$t.a" | base64
 			echo "BIN-END $t"
 		done
-		row eid-bin PASS "linux-arm64 sha256=$sum_arm darwin-arm64 sha256=$sum_mac; each built twice with one hash; vectors/cli.tsv agree with a linux-amd64 build"
+		row eid-bin PASS "linux-arm64 sha256=$sum_arm darwin-arm64 sha256=$sum_mac linux-amd64 sha256=$sum_amd; each built twice with one hash; vectors/cli.tsv agree with the linux-amd64 build"
 	else
 		row eid-bin FAIL "a build failed, two builds differ, or the built binary disagrees with vectors/cli.tsv"
 	fi
@@ -330,7 +333,7 @@ else
 	row eid-bin FAIL "go=$golang"
 fi
 
-echo "ROW COULD-NOT-MEASURE [eid-casefold] a case-folding file system (NTFS, APFS) is not available in a Linux container; eid-one-case asserts one-case text instead"
+echo "ROW COULD-NOT-MEASURE [eid-casefold] a case-folding file system (NTFS, APFS) is not available in a Linux container; eid-one-case asserts one-case text instead; rows/eid-casefold.sh measures it on such a host"
 
 # ---- G4 against a real Valkey
 SERVER=""

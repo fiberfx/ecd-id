@@ -59,9 +59,9 @@ One call is one allocator run:
 2. It opens the store in `DIR` and starts the allocator of the system under its home. The home is `--home`, else
    `EID_HOME`, else the host name up to its first dot, in lowercase. A store taken by another process makes the
    call retry for about three seconds, then refuse with `active`.
-3. It asks for one lease of one hour. A run that starts in the second of the previous grant waits for the next second
-   (`wait` is retried twice) and then asks again.
-4. It mints N ids inside that lease and releases the store.
+3. It asks for one lease of one hour and releases the store (`TakeLease`). A run that starts in the second of the
+   previous grant waits for the next second (`wait` is retried twice) and then asks again.
+4. It mints N ids inside that lease.
 
 A system keeps one store, on one host; two hosts that keep a store of the same system can grant one writer twice.
 
@@ -73,10 +73,11 @@ the lease. The call is `TakeLease` of the Go package, which `mint --store` also 
 
 - The output is one line, `system:writer:not_before:not_after`, the text that [`ParseLease`](lease.md#the-lease) accepts,
   for example `EID_LEASE=$(eid lease mxe --store "$EID_STORE")`. A refusal prints nothing on standard output.
-- `--term MS` is the window of the lease, 1 to 86,400,000; the default is 86,400,000 (24 hours). A lease for a process
-  is its whole life without renewal, so the default is the longest term; `mint --store` keeps one hour.
+- `--term MS` is the window of the lease, 1 to 86,400,000; the default is 86,400,000 (24 hours). A lease handed to a
+  process at its start lasts its whole life when the process has no route to a fresh lease
+  ([lease.md](lease.md#minter)), so the default is the longest term; `mint --store` keeps one hour.
 - `--active-wait MS` is how long the call polls an activation that another run holds before it refuses with
-  `active`, 0 to 60,000; the default is 3,000 (100 attempts 30 ms apart).
+  `active`, 0 to 60,000; the default is 3,000 (one attempt, then 100 more 30 ms apart).
 - The command reads `EID_HOME` and `EID_REGISTRY` as `mint` does and does not read `EID_STORE`: a supervisor takes
   its three names from its own environment and passes them as flags ([registry.md](registry.md#systems)).
 - `-n` and `--lease` are usage errors, as are `--term` and `--active-wait` for any other command.
