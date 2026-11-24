@@ -124,6 +124,15 @@ func genCLI() string {
 	_, err := newMinter(must(parseLease(past))).mint(cliClock, "job")
 	assert(err != nil, "a lease in the past minted")
 	refused("mint-lease-ended", "mint emq job --lease "+past, reason(err))
+	// `eid lease` refuses in this order before it opens a store; no row names a granted lease, whose writer depends on
+	// the clock and a random offset (the G13 tests take those).
+	const leaseStore = " --store /tmp/eid-store"
+	refused("lease-reserved", "lease 2ab"+leaseStore, "system-reserved")
+	refused("lease-detached", "lease 3ab"+leaseStore, "class")
+	refused("lease-unknown", "lease zzz"+leaseStore, "unknown")
+	refused("lease-retired", "lease brd"+leaseStore, "state")
+	refused("lease-no-home", "lease emq"+leaseStore, "not-home")
+	refused("lease-other-home", "lease kan"+leaseStore+" --home box", "not-home")
 
 	usage := func(name, args string) { out.WriteString(cliRow(name, args, 2, "", "*")) }
 	usage("usage-no-command", "-")
@@ -139,5 +148,14 @@ func genCLI() string {
 	usage("usage-unknown-flag", "mint emq job --lease "+emqLease+" --bogus x")
 	usage("usage-system-not-a-code", "mint EMQ job --lease "+emqLease)
 	usage("usage-detached-with-lease", "detached evt --lease "+emqLease)
+	usage("usage-lease-no-system", "lease")
+	usage("usage-lease-no-store", "lease kan")
+	usage("usage-lease-two-systems", "lease kan emq"+leaseStore)
+	usage("usage-lease-with-lease", "lease kan --lease kan:7:1:2"+leaseStore)
+	usage("usage-lease-count", "lease kan -n 2"+leaseStore)
+	usage("usage-lease-term-zero", "lease kan --term 0"+leaseStore)
+	usage("usage-lease-term-over", "lease kan --term 86400001"+leaseStore)
+	usage("usage-lease-wait-over", "lease kan --active-wait 60001"+leaseStore)
+	usage("usage-lease-system-upper", "lease KAN"+leaseStore)
 	return out.String()
 }

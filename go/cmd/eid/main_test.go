@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 
 	eid "github.com/fiberfx/ecd-id/go"
 )
@@ -61,7 +60,8 @@ func vectorArgs(r vectorRow) []string {
 	return strings.Split(r.args, " ")
 }
 
-// testEnv is an environment with a manual clock whose sleep moves the clock, so a wait costs no time.
+// testEnv is an environment with a manual clock. The clock owns the waits of an allocator run (eid.Sleeper), so a
+// wait moves it and costs no time.
 func testEnv(clock *eid.ManualClock, vars map[string]string) env {
 	return env{
 		getenv:   func(k string) string { return vars[k] },
@@ -69,7 +69,6 @@ func testEnv(clock *eid.ManualClock, vars map[string]string) env {
 		clock:    clock,
 		random:   eid.OsRandom{},
 		pids:     eid.NewManualPid(1),
-		sleep:    func(d time.Duration) { clock.Advance(uint64(d / time.Millisecond)) },
 	}
 }
 
@@ -230,4 +229,139 @@ func TestG13_DetachedMintsDetachedIDs(t *testing.T) {
 		t.Fatalf("detached EVT: exit %d %q", code, errb.String())
 	}
 	fmt.Println("G13: detached mints 20 rising detached ids of one code and one writer, and a second call draws another writer")
+}
+
+func leaseOf(t *testing.T, out string) eid.Lease {
+	t.Helper()
+	if strings.Count(out, "\n") != 1 || !strings.HasSuffix(out, "\n") {
+		t.Fatalf("lease output %q is not one line", out)
+	}
+	l, err := eid.ParseLease(strings.TrimSuffix(out, "\n"))
+	if err != nil {
+		t.Fatalf("%q: %v", out, err)
+	}
+	return l
+}
+
+func TestG13_LeaseTakesALeasePerCallAndMintsInsideIt(t *testing.T) {
+	store := t.TempDir()
+	clock := eid.NewManualClock(now)
+	e := testEnv(clock, map[string]string{"EID_REGISTRY": registryDir(), "EID_HOME": "m5"})
+	kan := eid.MustCode("kan")
+	writers := map[uint32]bool{}
+	for call := 0; call < 3; call++ {
+		l := leaseOf(t, mustRun(t, e, "lease", "kan", "--store", store))
+		if l.System != kan || l.NotAfter-l.NotBefore != eid.LeaseTermMax {
+			t.Fatalf("call %d: %s", call, l)
+		}
+		writers[l.Writer] = true
+		for _, id := range idsOf(t, mustRun(t, e, "mint", "kan", "doc", "-n", "5", "--lease", l.String())) {
+			if id.System() != kan || id.Writer() != l.Writer {
+				t.Fatalf("call %d: %s is not inside %s", call, id, l)
+			}
+		}
+	}
+	if len(writers) != 3 {
+		t.Fatalf("%d writers for 3 calls", len(writers))
+	}
+	short := leaseOf(t, mustRun(t, e, "lease", "kan", "--store", store, "--term", "5000"))
+	if short.NotAfter-short.NotBefore != 5000 || writers[short.Writer] {
+		t.Fatalf("--term 5000: %s", short)
+	}
+	fmt.Println("G13: 3 lease calls on one store (2 of them inside one grant second) print 3 distinct writers of 24 hours, " +
+		"ids mint inside each, and --term sets the window")
+}
+
+func TestG13_LeaseRefusalsBeforeTheStoreLeaveItUntouched(t *testing.T) {
+	clock := eid.NewManualClock(now)
+	e := testEnv(clock, map[string]string{"EID_REGISTRY": registryDir(), "EID_HOME": "m5"})
+	absent := filepath.Join(t.TempDir(), "absent")
+	cases := []struct {
+		name, reason string
+		args         []string
+	}{
+		{"reserved system", "system-reserved", []string{"lease", "2ab", "--store", absent}},
+		{"detached system", "class", []string{"lease", "3ab", "--store", absent}},
+		{"system not in the registry", "unknown", []string{"lease", "zzz", "--store", absent}},
+		{"retired system", "state", []string{"lease", "brd", "--store", absent}},
+		{"system without a home", "not-home", []string{"lease", "emq", "--store", absent}},
+		{"other home", "not-home", []string{"lease", "kan", "--store", absent, "--home", "box"}},
+	}
+	for _, c := range cases {
+		var out, errb bytes.Buffer
+		if code := run(c.args, e, &out, &errb); code != exitRefused || out.Len() != 0 || errb.String() != "refused: "+c.reason+"\n" {
+			t.Fatalf("%s: exit %d stdout %q stderr %q", c.name, code, out.String(), errb.String())
+		}
+	}
+	if _, err := os.Stat(absent); !os.IsNotExist(err) {
+		t.Fatalf("a refusal before the store opened created %s (%v)", absent, err)
+	}
+	fmt.Printf("G13: %d lease refusals are made before the store opens and leave its directory absent\n", len(cases))
+}
+
+func TestG13_LeaseHeldActivationAndClockBehind(t *testing.T) {
+	store := t.TempDir()
+	clock := eid.NewManualClock(now)
+	e := testEnv(clock, map[string]string{"EID_REGISTRY": registryDir(), "EID_HOME": "m5"})
+	kan := eid.MustCode("kan")
+	holder, err := eid.OpenFileStore(store)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !holder.Activate(kan) {
+		t.Fatal("holder activation")
+	}
+	var out, errb bytes.Buffer
+	before := clock.NowMs()
+	if code := run([]string{"lease", "kan", "--store", store, "--active-wait", "90"}, e, &out, &errb); code != exitRefused ||
+		out.Len() != 0 || errb.String() != "refused: active\n" || clock.NowMs()-before != 90 {
+		t.Fatalf("held store, 90 ms: exit %d stdout %q stderr %q, waited %d ms", code, out.String(), errb.String(),
+			clock.NowMs()-before)
+	}
+	out.Reset()
+	errb.Reset()
+	before = clock.NowMs()
+	if code := run([]string{"lease", "kan", "--store", store, "--active-wait", "0"}, e, &out, &errb); code != exitRefused ||
+		errb.String() != "refused: active\n" || clock.NowMs() != before {
+		t.Fatalf("held store, no wait: exit %d stderr %q, waited %d ms", code, errb.String(), clock.NowMs()-before)
+	}
+	holder.Release(kan)
+	l := leaseOf(t, mustRun(t, e, "lease", "kan", "--store", store))
+	if l.System != kan {
+		t.Fatalf("after the release: %s", l)
+	}
+	// A stored grant second ahead of the clock refuses with clock-behind.
+	ahead := t.TempDir()
+	st, err := eid.OpenFileStore(ahead)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !st.CompareAndSet(kan, 0, false, now/1000+100) {
+		t.Fatal("store set")
+	}
+	out.Reset()
+	errb.Reset()
+	if code := run([]string{"lease", "kan", "--store", ahead}, e, &out, &errb); code != exitRefused || out.Len() != 0 ||
+		errb.String() != "refused: clock-behind\n" {
+		t.Fatalf("stored second ahead: exit %d stdout %q stderr %q", code, out.String(), errb.String())
+	}
+	fmt.Println("G13: a held activation gives `active` after --active-wait (90 ms polled, 0 ms not), then a lease once released; " +
+		"a stored second ahead gives `clock-behind`")
+}
+
+func TestG13_LeaseFlagsBelongToLease(t *testing.T) {
+	store := t.TempDir()
+	e := testEnv(eid.NewManualClock(now), map[string]string{"EID_REGISTRY": registryDir(), "EID_HOME": "m5"})
+	for _, args := range [][]string{
+		{"mint", "kan", "doc", "--store", store, "--term", "5"},
+		{"mint", "kan", "doc", "--store", store, "--active-wait", "5"},
+		{"parse", "emq_job_23obzcbapvupu2272222", "--term", "5"},
+		{"detached", "evt", "--active-wait", "0"},
+	} {
+		var out, errb bytes.Buffer
+		if code := run(args, e, &out, &errb); code != exitUsage || out.Len() != 0 {
+			t.Fatalf("%v: exit %d stdout %q", args, code, out.String())
+		}
+	}
+	fmt.Println("G13: --term and --active-wait are refused as usage errors by every command but lease")
 }

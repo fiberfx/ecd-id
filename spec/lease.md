@@ -36,6 +36,13 @@ still stamps inside its own window.
 - `not_before` ≥ 1 means no lease covers time zero, so no minted id equals a system's own id, whose local part is zero
   ([mxdb.md](mxdb.md)).
 - One lease goes to one process.
+- **A process that reads `EID_LEASE` removes it from its environment, or from the environment of every child it
+  starts, before it starts one.** A child that the process execs with its environment would read the variable, build
+  its own minter under its own pid and share the lease; the pid guard ([below](#pid-guard)) does not see it. A process
+  that cannot change its own environment removes the variable from each child's environment instead.
+- **A process declared as the holder of a lease is its only reader.** A process declared with `eid:` (the key and the
+  `--eid` flag of fv) is the only reader of its lease; a wrapper that starts several readers, or restarts its child,
+  must not be declared with `eid:`. A supervisor cannot check this, so it is a rule for whoever writes the stack.
 
 ## Writer numbers
 
@@ -109,6 +116,18 @@ synced. A compare-and-set returns only after that, so a grant is on disk before 
 cannot be read or parsed reads as the largest second, and the allocator then refuses with `clock-behind` rather than
 grant again.
 
+**One store per home.** A home keeps one store: one directory, on one host, outside every shared mount. The activation
+lock is per directory, so these cases are not fenced and each runs an allocator of the system (P1 broken):
+
+- two directories on the home host, both used under the home's name;
+- another host that presents the same name with its own directory (a matching short host name, or an `EID_HOME` that
+  reached it).
+
+One directory reached from two hosts over a shared mount is fenced only if `flock` holds across the mount, which is
+not measured for virtiofs between macOS and a Linux virtual machine. A copy of the store started under another home is
+refused (`not-home`); a whole machine cloned with both copies running is bounded under
+[Restore and clone](#restore-and-clone).
+
 ## Restore and clone
 
 - **A store restored from an old copy** cannot repeat a writer while the host clock at restart is later than the clock
@@ -144,6 +163,10 @@ last_t = t; emit (system, kind, t, writer, count)
   raises the new `not_before` to `last_t + 1`, so one minter's ids of a kind never go backward in byte order, even when
   the new writer number is lower. A lease of another system is refused (`lease-system`); a lease that ends before
   `last_t + 1` is refused (`lease-ended`).
+- **No route to a fresh lease.** A minter with no route to a fresh lease keeps it to its end, then mints detached: a new
+  minter on a detached lease ([below](#detached)), since a switch refuses another system (`lease-system`). The ids
+  minted after the change carry a detached system code, and the system is the first field of an id, so their byte order
+  is not the order of minting across the change.
 
 <a id="pid-guard"></a>
 
@@ -151,6 +174,10 @@ last_t = t; emit (system, kind, t, writer, count)
 
 The minter records the process id it was created under and refuses to mint or switch under another (`fork`). A child
 forked after the minter was created therefore cannot mint on its parent's lease; it takes its own lease.
+
+The guard does not cover a child that the process **execs** with its environment: the child reads `EID_LEASE`, builds
+its own minter under its own pid and shares the lease. The rule of [the lease](#the-lease) closes that case: a process
+removes the variable before it starts a child.
 
 <a id="detached"></a>
 

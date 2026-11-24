@@ -13,6 +13,13 @@ code  name  owner  home  state  served_by
   never renamed. A service rename changes `name`, not `code`.
 - `home` names the one supervisor that may start the system's allocator ([lease.md](lease.md#allocator)); `-` means
   none is assigned, and no allocator starts.
+- A host that is the `home` of a system names its home, its one store and its registry once, in its own launch
+  environment: `EID_HOME`, `EID_STORE` and `EID_REGISTRY`, set in that host's shell profile or in the service manager's
+  unit for its supervisor. They are never set in configuration that another host reads (a settings file or any file
+  under a shared mount, a checked-in stack file, a step's `env`), and `EID_STORE` names a directory outside every
+  shared mount ([lease.md](lease.md#file-store)). A supervisor takes all three from its environment, chooses no
+  directory and derives no name from the host name; when any of the three is unset it takes no lease. The `eid`
+  command keeps its defaults (`--home` falls back to the host name), so this rule binds supervisors, not the command.
 - `state` is `live`, `closed` (ids stay readable; nothing mints) or `retired`.
 - `served_by` is `-` or the code of a system that now serves this one, after a merge.
 - Detached codes have no rows.

@@ -46,6 +46,12 @@ mint-lease-writer	mint emq job --lease emq:1073741824:1:2	1	-	refused: lease-wri
 mint-lease-window	mint emq job --lease emq:5:0:10	1	-	refused: lease-window\n
 mint-lease-system	mint emq job --lease kan:7:4102444800000:4102531200000	1	-	refused: lease-system\n
 mint-lease-ended	mint emq job --lease emq:5:1000:2000	1	-	refused: lease-ended\n
+lease-reserved	lease 2ab --store /tmp/eid-store	1	-	refused: system-reserved\n
+lease-detached	lease 3ab --store /tmp/eid-store	1	-	refused: class\n
+lease-unknown	lease zzz --store /tmp/eid-store	1	-	refused: unknown\n
+lease-retired	lease brd --store /tmp/eid-store	1	-	refused: state\n
+lease-no-home	lease emq --store /tmp/eid-store	1	-	refused: not-home\n
+lease-other-home	lease kan --store /tmp/eid-store --home box	1	-	refused: not-home\n
 usage-no-command	-	2	-	*
 usage-unknown-command	bogus	2	-	*
 usage-parse-no-id	parse	2	-	*
@@ -59,3 +65,12 @@ usage-flag-no-value	mint emq job --lease	2	-	*
 usage-unknown-flag	mint emq job --lease emq:895287301:4102444800000:4102531200000 --bogus x	2	-	*
 usage-system-not-a-code	mint EMQ job --lease emq:895287301:4102444800000:4102531200000	2	-	*
 usage-detached-with-lease	detached evt --lease emq:895287301:4102444800000:4102531200000	2	-	*
+usage-lease-no-system	lease	2	-	*
+usage-lease-no-store	lease kan	2	-	*
+usage-lease-two-systems	lease kan emq --store /tmp/eid-store	2	-	*
+usage-lease-with-lease	lease kan --lease kan:7:1:2 --store /tmp/eid-store	2	-	*
+usage-lease-count	lease kan -n 2 --store /tmp/eid-store	2	-	*
+usage-lease-term-zero	lease kan --term 0 --store /tmp/eid-store	2	-	*
+usage-lease-term-over	lease kan --term 86400001 --store /tmp/eid-store	2	-	*
+usage-lease-wait-over	lease kan --active-wait 60001 --store /tmp/eid-store	2	-	*
+usage-lease-system-upper	lease KAN --store /tmp/eid-store	2	-	*

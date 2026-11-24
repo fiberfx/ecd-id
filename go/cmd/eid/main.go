@@ -20,6 +20,7 @@ const usage = `usage:
   eid valid ID
   eid mint SYSTEM KIND [-n N] --store DIR [--home NAME] [--registry DIR]
   eid mint SYSTEM KIND [-n N] --lease LEASE [--registry DIR]
+  eid lease SYSTEM --store DIR [--home NAME] [--registry DIR] [--term MS] [--active-wait MS]
   eid detached KIND [-n N]
 `
 
@@ -32,27 +33,24 @@ const (
 )
 
 const (
-	maxCount     = 1_000_000 // the most ids one call mints
-	leaseTermMs  = 3_600_000 // the term of a lease taken from a store
-	activeTries  = 100       // attempts to take the activation while another process holds it
-	activeWaitMs = 30        // milliseconds between those attempts
-	waitTries    = 2         // attempts to wait out the grant second of an earlier run
+	maxCount      = 1_000_000 // the most ids one call mints
+	leaseTermMs   = 3_600_000 // the term of a lease that `mint --store` takes
+	maxActiveWait = 60_000    // the most milliseconds `lease --active-wait` polls a held activation
 )
 
-// env is what the command reads from outside: the environment, the host, the clock, the random source, the process
-// id and the sleep that waits for the next second.
+// env is what the command reads from outside: the environment, the host, the clock, the random source and the
+// process id. The clock also owns the waits of an allocator run (eid.Sleeper).
 type env struct {
 	getenv   func(string) string
 	hostname func() (string, error)
 	clock    eid.Clock
 	random   eid.RandomSource
 	pids     eid.PidSource
-	sleep    func(time.Duration)
 }
 
 func main() {
 	e := env{getenv: os.Getenv, hostname: os.Hostname, clock: eid.SystemClock{}, random: eid.OsRandom{},
-		pids: eid.ProcessPid{}, sleep: time.Sleep}
+		pids: eid.ProcessPid{}}
 	os.Exit(run(os.Args[1:], e, os.Stdout, os.Stderr))
 }
 
@@ -85,8 +83,14 @@ func run(args []string, e env, stdout, stderr io.Writer) int {
 type options struct {
 	pos                          []string
 	count                        int
+	countSet                     bool
 	store, home, registry, lease string
+	term, activeWait             int // milliseconds; read only when termSet or waitSet
+	termSet, waitSet             bool
 }
+
+// leaseOnly reports whether a flag of `lease` alone is given.
+func (o options) leaseOnly() bool { return o.termSet || o.waitSet }
 
 func parseOptions(args []string) (options, error) {
 	o := options{count: 1}
@@ -107,7 +111,19 @@ func parseOptions(args []string) (options, error) {
 			if err != nil || n < 1 || n > maxCount {
 				return o, usageError("-n is a count from 1 to " + strconv.Itoa(maxCount))
 			}
-			o.count = n
+			o.count, o.countSet = n, true
+		case "--term":
+			n, err := strconv.Atoi(v)
+			if err != nil || n < 1 || n > eid.LeaseTermMax {
+				return o, usageError("--term is a number of milliseconds from 1 to " + strconv.Itoa(eid.LeaseTermMax))
+			}
+			o.term, o.termSet = n, true
+		case "--active-wait":
+			n, err := strconv.Atoi(v)
+			if err != nil || n < 0 || n > maxActiveWait {
+				return o, usageError("--active-wait is a number of milliseconds from 0 to " + strconv.Itoa(maxActiveWait))
+			}
+			o.activeWait, o.waitSet = n, true
 		case "--store":
 			o.store = v
 		case "--home":
@@ -133,7 +149,7 @@ func dispatch(args []string, e env) (string, error) {
 	}
 	switch args[0] {
 	case "parse", "valid":
-		if len(o.pos) != 1 || o.count != 1 || o.store != "" || o.home != "" || o.registry != "" || o.lease != "" {
+		if len(o.pos) != 1 || o.count != 1 || o.store != "" || o.home != "" || o.registry != "" || o.lease != "" || o.leaseOnly() {
 			return "", usageError(args[0] + " takes one ID")
 		}
 		id, err := eid.ParseString(o.pos[0])
@@ -148,12 +164,17 @@ func dispatch(args []string, e env) (string, error) {
 		if len(o.pos) != 2 {
 			return "", usageError("mint takes a system and a kind")
 		}
-		if (o.store == "") == (o.lease == "") {
-			return "", usageError("mint takes one of --store and --lease")
+		if (o.store == "") == (o.lease == "") || o.leaseOnly() {
+			return "", usageError("mint takes one of --store and --lease, and no --term or --active-wait")
 		}
 		return mint(o, e)
+	case "lease":
+		if len(o.pos) != 1 || o.store == "" || o.lease != "" || o.countSet {
+			return "", usageError("lease takes a system and --store, and no -n or --lease")
+		}
+		return lease(o, e)
 	case "detached":
-		if len(o.pos) != 1 || o.store != "" || o.home != "" || o.registry != "" || o.lease != "" {
+		if len(o.pos) != 1 || o.store != "" || o.home != "" || o.registry != "" || o.lease != "" || o.leaseOnly() {
 			return "", usageError("detached takes a kind")
 		}
 		return detached(o, e)
@@ -270,7 +291,7 @@ func homeOf(o options, e env) (string, error) {
 
 // mintStored takes a lease from the store in o.store, as the allocator of system, and mints n ids inside it. Two
 // calls that overlap take the activation in turn; a call that starts in the second of the previous grant waits for
-// the next second.
+// the next second (eid.TakeLease).
 func mintStored(o options, e env, reg *eid.Registry, system, kind eid.Code) (string, error) {
 	home, err := homeOf(o, e)
 	if err != nil {
@@ -280,34 +301,60 @@ func mintStored(o options, e env, reg *eid.Registry, system, kind eid.Code) (str
 	if err != nil {
 		return "", err
 	}
-	offset, err := eid.RandomOffset(e.random)
-	if err != nil {
-		return "", err
-	}
-	var a *eid.Allocator
-	for try := 0; ; try++ {
-		a, err = eid.StartAllocator(reg, system, home, st, e.clock, offset)
-		if err != eid.ErrActive || try == activeTries {
-			break
-		}
-		e.sleep(activeWaitMs * time.Millisecond)
-	}
-	if err != nil {
-		return "", storeError(err, st)
-	}
-	defer st.Release(system)
-	var l eid.Lease
-	for try := 0; ; try++ {
-		l, err = a.Grant(leaseTermMs)
-		if err != eid.ErrWait || try == waitTries {
-			break
-		}
-		e.sleep(time.Duration(1000-e.clock.NowMs()%1000+1) * time.Millisecond)
-	}
+	l, err := eid.TakeLease(reg, system, home, st, e.clock, e.random, leaseTermMs, eid.DefaultActiveWait)
 	if err != nil {
 		return "", storeError(err, st)
 	}
 	return mintIn(l, kind, o.count, e)
+}
+
+// lease takes one lease of the system in o.pos[0] from the store in o.store, as one allocator run, and returns its
+// text form on one line. The checks before the store is opened leave the store untouched when they refuse.
+func lease(o options, e env) (string, error) {
+	system, ok := eid.ParseCode(o.pos[0])
+	if !ok {
+		return "", usageError(o.pos[0] + " is not a system code")
+	}
+	switch system.Class() {
+	case eid.Reserved:
+		return "", eid.ErrSystemReserved
+	case eid.Detached:
+		return "", eid.ErrClass
+	}
+	reg, err := loadRegistry(o, e)
+	if err != nil {
+		return "", err
+	}
+	row, ok := reg.System(system)
+	switch {
+	case !ok:
+		return "", eid.ErrUnknown
+	case row.State != eid.Live:
+		return "", eid.ErrState
+	}
+	home, err := homeOf(o, e)
+	if err != nil {
+		return "", err
+	}
+	if row.Home == "-" || row.Home != home {
+		return "", eid.ErrNotHome
+	}
+	term, wait := eid.LeaseTermMax, int(eid.DefaultActiveWait/time.Millisecond)
+	if o.termSet {
+		term = o.term
+	}
+	if o.waitSet {
+		wait = o.activeWait
+	}
+	st, err := eid.OpenFileStore(o.store)
+	if err != nil {
+		return "", err
+	}
+	l, err := eid.TakeLease(reg, system, home, st, e.clock, e.random, uint64(term), time.Duration(wait)*time.Millisecond)
+	if err != nil {
+		return "", storeError(err, st)
+	}
+	return l.String() + "\n", nil
 }
 
 // storeError names a failure of the store's own input or output instead of the refusal that follows from it.

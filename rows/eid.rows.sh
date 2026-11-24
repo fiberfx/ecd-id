@@ -33,6 +33,8 @@
 #                        refused
 #   eid-store       G12  go: two processes x 1000 grants on one FileStore give 2000 distinct writers; control: no lock
 #   eid-cli         G13  go: the command eid against vectors/cli.tsv, in process; stores, refusals, detached
+#   eid-lease            go: TakeLease on a FileStore: distinct writers per call, the activation released, refusals; control: the
+#                        start-wait removed repeats a writer (the command's lease tests are in eid-cli)
 #   eid-bin              go: eid built for linux-arm64 and darwin-arm64 (CGO off), each twice with one sha256, the
 #                        vectors run against a linux-amd64 build; the two binaries are printed as gzip+base64
 # Exit: 0 no FAIL and no unexpected COULD-NOT-MEASURE; 1 any FAIL; 2 an unexpected COULD-NOT-MEASURE.
@@ -209,6 +211,7 @@ gogate() {
 }
 gogate eid-store '^TestG12' "FileStore: record on disk, one activation per system, 2 processes x 1000 grants give 2000 distinct writers; control without the lock repeats"
 gogate eid-cli '^TestG13' "eid against vectors/cli.tsv in process; stores take a lease per call; refusals; detached"
+gogate eid-lease '^TestLease' "TakeLease: one writer per call inside one second, the activation released on return, refusals, active and clock-behind; control without the start-wait repeats a writer"
 gogate eid-encodings '^TestEncoding' "MarshalText/UnmarshalText, Value/Scan, NullID with JSON; the zero id refused"
 
 # The violating case of eid-brd14: a scratch copy of go/ passes G14 unmodified, and fails it with writer and count
