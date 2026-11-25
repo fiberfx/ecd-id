@@ -24,9 +24,33 @@ const (
 // Role is the role of a kind; a typed field checks it.
 type Role string
 
-var roles = map[string]bool{
-	"entity": true, "activation": true, "command": true, "run": true, "stream": true,
-	"store": true, "database": true, "transaction": true, "correlation": true, "request": true,
+// The roles of spec/registry.md, in its order. The kind sys of the format has the role system, which no row holds and
+// no constant names.
+const (
+	RoleEntity      Role = "entity"
+	RoleActivation  Role = "activation"
+	RoleCommand     Role = "command"
+	RoleRun         Role = "run"
+	RoleStream      Role = "stream"
+	RoleStore       Role = "store"
+	RoleDatabase    Role = "database"
+	RoleTransaction Role = "transaction"
+	RoleCorrelation Role = "correlation"
+	RoleRequest     Role = "request"
+)
+
+// roles is the set a row of kinds.tsv may name.
+var roles = map[Role]bool{
+	RoleEntity:      true,
+	RoleActivation:  true,
+	RoleCommand:     true,
+	RoleRun:         true,
+	RoleStream:      true,
+	RoleStore:       true,
+	RoleDatabase:    true,
+	RoleTransaction: true,
+	RoleCorrelation: true,
+	RoleRequest:     true,
 }
 
 // SystemRow is a row of registry/systems.tsv. ServedBy is nil when the row names none.
@@ -180,7 +204,7 @@ func ParseRegistry(systems, kinds string) (*Registry, error) {
 		if !ok || !kind.IsKind() || kind == Sys {
 			return nil, &RegistryError{"registry-code", r.line}
 		}
-		if !roles[c[2]] {
+		if !roles[Role(c[2])] {
 			return nil, &RegistryError{"registry-role", r.line}
 		}
 		st, err := registryState(c[3], r.line)
@@ -236,5 +260,17 @@ func (r *Registry) KindsOf(system Code) []KindRow {
 		}
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].Kind < out[j].Kind })
+	return out
+}
+
+// KindsByRole returns the kinds of one system that have the role, in code order, whatever their state. It returns none
+// for a system that has no row and for a role outside the list.
+func (r *Registry) KindsByRole(system Code, role Role) []KindRow {
+	var out []KindRow
+	for _, row := range r.KindsOf(system) {
+		if row.Role == role {
+			out = append(out, row)
+		}
+	}
 	return out
 }
