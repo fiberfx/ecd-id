@@ -61,21 +61,25 @@ fvx	req	request	live	-	request
 fvx	run	run	live	-	run
 kan	agt	entity	live	-	registered principal
 kan	aus	entity	live	-	agentic user story
+kan	cal	request	live	-	tool call with its result, in a transcript
 kan	car	entity	live	-	car, one brief of a rung, built by helpers
 kan	cmt	entity	live	-	git commit, keyed by its sha
 kan	crs	entity	live	-	correspondence
 kan	ded	transaction	live	-	deed of a KAN tool's Ecd Runtime store
 kan	doc	entity	live	-	document
 kan	epc	entity	live	-	epic, a set of AUS around one outcome
+kan	est	entity	live	-	estimate, one size given to a rung, an increment or a car
 kan	evt	stream	live	-	event
 kan	fea	entity	live	-	features catalogue of a program or project
 kan	hlp	run	live	-	helper run, one subagent of a lead session
+kan	ntc	stream	live	-	notice, a system record or a command of a transcript
 kan	pgm	entity	live	-	program node, its README
 kan	prj	entity	live	-	project node, its README
 kan	rng	entity	live	-	rung, a team execution of selected AUS
 kan	row	run	live	-	rows run of flow:row-container
 kan	rpl	entity	live	-	reply, one copy of a model reply in a transcript
 kan	ses	activation	live	-	session
+kan	sig	entity	live	-	error signature, the redacted template of a tool error
 kan	spc	entity	live	-	specification or contract
 kan	ssn	activation	live	-	session of Claude Code, as kan-analytics ingests it
 kan	trk	entity	live	-	track node, its record
