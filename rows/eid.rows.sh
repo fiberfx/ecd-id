@@ -30,6 +30,8 @@
 #                        id is refused (ErrZero)
 #   eid-encodings-control  go: the unmodified scratch copy passes the encodings; with the zero refusal of MarshalText
 #                        removed by one sed, they fail
+#   eid-registry-roles-control  go: the unmodified scratch copy passes the role tests (TestRegistryRoles and
+#                        TestRegistryKindsByRole); with the role test of KindsByRole removed by one sed, they fail
 #   eid-detached-draw    one 16-bit draw, r >= 61440 rejected, code 1024 + r mod 5120; Rust and Go agree; 64 rejections
 #                        refused
 #   eid-store       G12  go: two processes x 1000 grants on one FileStore give 2000 distinct writers; control: no lock
@@ -258,6 +260,28 @@ if [ "$golang" = built ]; then
 	rm -rf "$M"
 else
 	row eid-encodings-control FAIL "go=$golang"
+fi
+
+# The violating case of the roles: a scratch copy of go/ passes the role tests unmodified, and fails them with the role
+# test of KindsByRole removed (the one line "if row.Role == role {" becomes "if true {").
+if [ "$golang" = built ]; then
+	M=$(mktemp -d /tmp/eid-roles-mutant.XXXXXX)
+	cp -r "$W/go" "$W/vectors" "$W/registry" "$M/"
+	(cd "$M/go" && go test -count=1 -v -run '^TestRegistry(Roles|KindsByRole)' .) >"$L/roles-unmodified.log" 2>&1
+	crc=$?
+	sed -i 's/if row.Role == role {/if true {/' "$M/go/registry.go"
+	changed=$(diff "$W/go/registry.go" "$M/go/registry.go" | grep -c '^>')
+	(cd "$M/go" && go test -count=1 -v -run '^TestRegistry(Roles|KindsByRole)' .) >"$L/roles-mutant.log" 2>&1
+	mrc=$?
+	grep -E -m4 -- '--- FAIL|want' "$L/roles-mutant.log" | cut -c1-220 | sed 's/^/  roles mutant: /'
+	if [ $crc -eq 0 ] && [ "$changed" -eq 1 ] && [ $mrc -ne 0 ] && grep -q -- '^--- FAIL: TestRegistryKindsByRole ' "$L/roles-mutant.log"; then
+		row eid-registry-roles-control PASS "go: the unmodified scratch copy passes the role tests; the role test of KindsByRole removed (1 line): TestRegistryKindsByRole fails, rc=$mrc"
+	else
+		row eid-registry-roles-control FAIL "unmodified rc=$crc, lines changed=$changed, mutant rc=$mrc"
+	fi
+	rm -rf "$M"
+else
+	row eid-registry-roles-control FAIL "go=$golang"
 fi
 
 # The violating case of eid-registry-retired: a scratch copy passes its tests in Go and Rust unmodified, and fails them

@@ -57,6 +57,13 @@ nullable or optional fields use `NullID`. The encodings refuse with `zero` (the 
 into an ID), `scan-type` (a Scan source that is not []byte) and `json-type` (a JSON value that is neither a string nor,
 for NullID, null).
 
+`Role` is the role of a kind ([spec/registry.md](spec/registry.md#roles)). Its ten values are the constants
+`RoleEntity`, `RoleActivation`, `RoleCommand`, `RoleRun`, `RoleStream`, `RoleStore`, `RoleDatabase`, `RoleTransaction`,
+`RoleCorrelation` and `RoleRequest`, each the text of its role in `kinds.tsv`; the loader refuses any other text with
+`registry-role`. `Registry.KindsByRole(system, role)` returns the kinds of one system that have the role, in code order
+and in every state, as `KindsOf` does, and none for a system without a row or a role outside the list. Rust's
+`Role` enum names the same ten roles; Rust has no `kinds_by_role`.
+
 ## Running the checks
 
 ```sh
@@ -72,7 +79,7 @@ sh rows/eid-py.rows.sh                       # Python: unittest over the vectors
 `(cd model && go run .)` regenerates `vectors/`.
 
 Test names carry the property they check: Rust tests start with `g1_` to `g11_` and `g14_`, Go tests with `TestG01` to
-`TestG14`, and the registry tests with `registry_` and `TestRegistry` (they include the kind-only check of detached ids, and that every kind of a retired system is retired); `g12` and `g13` exist in Go only.
+`TestG14`, and the registry tests with `registry_` and `TestRegistry` (they include the kind-only check of detached ids, that every kind of a retired system is retired, and in Go the role constants and `KindsByRole`); `g12` and `g13` exist in Go only.
 
 | Prefix | Property |
 |---|---|
