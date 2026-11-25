@@ -64,17 +64,21 @@ kan	aus	entity	live	-	agentic user story
 kan	car	entity	live	-	car, one brief of a rung, built by helpers
 kan	cmt	entity	live	-	git commit, keyed by its sha
 kan	crs	entity	live	-	correspondence
+kan	ded	transaction	live	-	deed of a KAN tool's Ecd Runtime ledger
 kan	doc	entity	live	-	document
 kan	epc	entity	live	-	epic, a set of AUS around one outcome
+kan	est	entity	live	-	estimate, one size given to a rung, an increment or a car
 kan	evt	stream	live	-	event
 kan	fea	entity	live	-	features catalogue of a program or project
 kan	hlp	run	live	-	helper run, one subagent of a lead session
+kan	leg	run	live	-	leg, consecutive replies of one session on one model and effort
 kan	pgm	entity	live	-	program node, its README
 kan	prj	entity	live	-	project node, its README
 kan	rng	entity	live	-	rung, a team execution of selected AUS
 kan	row	run	live	-	rows run of flow:row-container
 kan	ses	activation	live	-	session
 kan	spc	entity	live	-	specification or contract
+kan	ssn	entity	live	-	session of a rung's tree, as kan-analytics records it
 kan	trk	entity	live	-	track node, its record
 mxe	cor	correlation	live	-	correlation id
 mxe	itm	entity	live	-	item key in an mx-echo app's store
