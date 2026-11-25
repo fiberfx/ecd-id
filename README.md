@@ -128,6 +128,19 @@ A process takes its lease with `eid lease SYSTEM --store "$EID_STORE"` ([spec/cl
 
 ### Release notes
 
+- **0.11.0** adds to the Go module the ten role constants `RoleEntity`, `RoleActivation`, `RoleCommand`, `RoleRun`,
+  `RoleStream`, `RoleStore`, `RoleDatabase`, `RoleTransaction`, `RoleCorrelation` and `RoleRequest`, and
+  `Registry.KindsByRole(system, role)`, the kinds of one system that have one role, in code order and in every state;
+  the loader's role set is built from the constants and refuses any other text with `registry-role` as before. The
+  system `kan` gains twelve kinds since 0.10.1: the entities `car` (car, one brief of a rung), `cmt` (git commit,
+  keyed by its sha), `est` (estimate, one size given to a rung, an increment or a car), `rpl` (reply, one copy of a
+  model reply in a transcript) and `sig` (error signature, the redacted template of a tool error); the runs `hlp`
+  (helper run) and `row` (rows run of flow:row-container); the transaction `ded` (deed of a KAN tool's Ecd Runtime
+  store); the activation `ssn` (session of Claude Code); the streams `ntc` (notice, a system record or a command of a
+  transcript) and `trn` (transcript); and the request `cal` (tool call with its result, in a transcript). Rows:
+  `eid-registry-roles-control`. A running `eid` reads the registry folder at each start, so a host takes the kinds
+  when its `EID_REGISTRY` copy is replaced. No Rust, TypeScript or Python code and no vector changed; the crate `eid`
+  and `fiberfx-eid` take 0.11.0, and the Go module `github.com/fiberfx/ecd-id/go` takes v0.11.0.
 - **0.10.1** makes the TypeScript package agree with the spec and the other three packages at two boundaries:
   `fromStreamId` refuses a negative `ms` or `seq` with `stream-range` (it wrapped a negative time to 2^48 - 1), and
   `newLease` takes whole numbers below 2^64, so one from 2^53 is refused with `lease-writer` or `lease-window` as the

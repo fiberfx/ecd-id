@@ -5,7 +5,7 @@ identifier of system, kind, mint millisecond, writer and count, with one 28-char
 `emq_job_23obzcbapvupu2272222`. The vectors in [`../vectors/`](../vectors) are the conformance contract, shared with
 the Go, Rust and TypeScript packages.
 
-The distribution is `fiberfx-eid`, version 0.10.1 with the repository, and the package is `eid`. It carries the
+The distribution is `fiberfx-eid`, version 0.11.0 with the repository, and the package is `eid`. It carries the
 classifier `Private :: Do Not Upload` until a publish is decided. It needs Python 3.12 or later and uses only the
 standard library.
 
