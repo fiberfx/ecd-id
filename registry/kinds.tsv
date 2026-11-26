@@ -74,16 +74,22 @@ kan	fea	entity	live	-	features catalogue of a program or project
 kan	hlp	run	live	-	helper run, one subagent of a lead session
 kan	ntc	stream	live	-	notice, a system record or a command of a transcript
 kan	pgm	entity	live	-	program node, its README
+kan	pin	entity	live	-	incoming message, one that came in from another session
 kan	prj	entity	live	-	project node, its README
+kan	que	entity	live	-	queued prompt, an enqueue among a transcript's queue operations
 kan	rng	entity	live	-	rung, a team execution of selected AUS
 kan	row	run	live	-	rows run of flow:row-container
 kan	rpl	entity	live	-	reply, one copy of a model reply in a transcript
+kan	seg	entity	live	-	segment of a shell command, at most four per tool call
 kan	ses	activation	live	-	session
+kan	sgt	entity	live	-	flow run named in a tool result
 kan	sig	entity	live	-	error signature, the redacted template of a tool error
+kan	snd	entity	live	-	recipient of an outgoing message, one per address
 kan	spc	entity	live	-	specification or contract
 kan	ssn	activation	live	-	session of Claude Code, as kan-analytics ingests it
 kan	trk	entity	live	-	track node, its record
 kan	trn	stream	live	-	transcript, one file of a session or of a helper
+kan	usr	entity	live	-	user turn, a user line of a transcript that carries no tool result
 mxe	cor	correlation	live	-	correlation id
 mxe	itm	entity	live	-	item key in an mx-echo app's store
 mxe	req	request	live	-	request
