@@ -71,6 +71,7 @@ kan	epc	entity	live	-	epic, a set of AUS around one outcome
 kan	est	entity	live	-	estimate, one size given to a rung, an increment or a car
 kan	evt	stream	live	-	event
 kan	fea	entity	live	-	features catalogue of a program or project
+kan	fev	entity	live	-	event of a flow machine, one transition of a run
 kan	hlp	run	live	-	helper run, one subagent of a lead session
 kan	ntc	stream	live	-	notice, a system record or a command of a transcript
 kan	pgm	entity	live	-	program node, its README
