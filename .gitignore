@@ -1,1 +1,20 @@
+# macOS and editors
+.DS_Store
 .idea/
+
+# Rust
+target/
+
+# Python
+__pycache__/
+*.pyc
+
+# Caches
+.cache/
+# Cargo target dirs
+/bin/
+# uv (trafikist_lab/python/)
+.venv/
+
+# Node packages
+node_modules/
