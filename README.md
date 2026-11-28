@@ -128,6 +128,15 @@ A process takes its lease with `eid lease SYSTEM --store "$EID_STORE"` ([spec/cl
 
 ### Release notes
 
+- **0.11.2** changes the registry only; no library code changed. The kind slot of the system `app` names a subsystem,
+  not a content kind (the Operator, 28 Nov 2026: "Fibervisor now owns the system of the apps app_<sub>_ with a
+  subsystem <sub>"). `app` is named "swappable apps under Fibervisor", with owner `fvx` and home `echd-os` as before.
+  It gains `ech` (live: an mx-echo app, and every entity it holds, told apart by components) and `mxs` (live: an mx
+  static app, a built tree the edge serves), and `ecd` (closed: reserved for ecd-core; nothing mints). The content
+  kinds of 0.11.1, `crs`, `lsn`, `lpt` and `chg`, are retired: they stay in the file, and nothing mints under them.
+  Vector rows: `mint-app-ech`, `mint-app-mxs`, `mint-app-ecd-closed` and `mint-app-crs-retired` (both `refused: kind`,
+  the answer for any kind that is not live); `mint-app-crs`, `mint-app-lsn`, `mint-app-lpt` and `mint-app-chg` are
+  gone. The crate `eid` and `fiberfx-eid` take 0.11.2, and the Go module `github.com/fiberfx/ecd-id/go` takes v0.11.2.
 - **0.11.1** changes the registry only; no library code changed. The system `app` (learning system apps and edu
   content) is registered, live, with `echd-os` (the edge Fly app) as its home, and holds four entities: `crs` (course),
   `lsn` (lesson), `lpt` (lesson part, one part of at most 4096 bytes of a lesson's text) and `chg` (change, one

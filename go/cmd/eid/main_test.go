@@ -338,7 +338,7 @@ func TestG13_LeaseGrantsAppAtItsHomeAndRefusesElsewhere(t *testing.T) {
 	if l.System != app || l.NotAfter-l.NotBefore != eid.LeaseTermMax {
 		t.Fatalf("lease %s is not a 24 hour lease of app", l)
 	}
-	for _, kind := range []string{"crs", "lsn", "lpt", "chg"} {
+	for _, kind := range []string{"ech", "mxs"} {
 		ids := idsOf(t, mustRun(t, e, "mint", "app", kind, "-n", "3", "--lease", l.String()))
 		if len(ids) != 3 {
 			t.Fatalf("mint app %s: %d ids", kind, len(ids))
@@ -353,9 +353,14 @@ func TestG13_LeaseGrantsAppAtItsHomeAndRefusesElsewhere(t *testing.T) {
 		}
 	}
 	var out, errb bytes.Buffer
-	if code := run([]string{"mint", "app", "zzz", "--lease", l.String()}, e, &out, &errb); code != exitRefused ||
-		out.Len() != 0 || errb.String() != "refused: kind\n" {
-		t.Fatalf("mint app zzz: exit %d stdout %q stderr %q", code, out.String(), errb.String())
+	// zzz has no row, ecd is closed (reserved for ecd-core) and the four content kinds are retired: none mints.
+	for _, kind := range []string{"zzz", "ecd", "crs", "lsn", "lpt", "chg"} {
+		out.Reset()
+		errb.Reset()
+		if code := run([]string{"mint", "app", kind, "--lease", l.String()}, e, &out, &errb); code != exitRefused ||
+			out.Len() != 0 || errb.String() != "refused: kind\n" {
+			t.Fatalf("mint app %s: exit %d stdout %q stderr %q", kind, code, out.String(), errb.String())
+		}
 	}
 	absent := filepath.Join(t.TempDir(), "absent")
 	out.Reset()
@@ -367,7 +372,7 @@ func TestG13_LeaseGrantsAppAtItsHomeAndRefusesElsewhere(t *testing.T) {
 	if _, err := os.Stat(absent); !os.IsNotExist(err) {
 		t.Fatalf("a refusal before the store opened created %s (%v)", absent, err)
 	}
-	fmt.Println("G13: app is leased at home echd-os and mints crs, lsn, lpt and chg inside the lease, each valid; the unregistered kind zzz is refused; at home m5 it is refused and the store stays absent")
+	fmt.Println("G13: app is leased at home echd-os and mints ech and mxs inside the lease, each valid; the unregistered zzz, the closed ecd and the retired crs, lsn, lpt and chg are refused; at home m5 it is refused and the store stays absent")
 }
 
 func TestG13_LeaseRefusalsBeforeTheStoreLeaveItUntouched(t *testing.T) {
