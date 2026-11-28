@@ -329,6 +329,47 @@ func TestG13_MintsTheSpecKindsOfKan(t *testing.T) {
 	fmt.Println("G13: kan mints aus, fea, spc, epc, rng, pgm, prj and trk beside doc inside one lease; the unregistered kind spe is refused")
 }
 
+func TestG13_LeaseGrantsAppAtItsHomeAndRefusesElsewhere(t *testing.T) {
+	clock := eid.NewManualClock(now)
+	e := testEnv(clock, map[string]string{"EID_REGISTRY": registryDir(), "EID_HOME": "devbox"})
+	store := t.TempDir()
+	l := leaseOf(t, mustRun(t, e, "lease", "app", "--home", "echd-os", "--store", store, "--registry", registryDir()))
+	app := eid.MustCode("app")
+	if l.System != app || l.NotAfter-l.NotBefore != eid.LeaseTermMax {
+		t.Fatalf("lease %s is not a 24 hour lease of app", l)
+	}
+	for _, kind := range []string{"crs", "lsn", "lpt", "chg"} {
+		ids := idsOf(t, mustRun(t, e, "mint", "app", kind, "-n", "3", "--lease", l.String()))
+		if len(ids) != 3 {
+			t.Fatalf("mint app %s: %d ids", kind, len(ids))
+		}
+		for _, id := range ids {
+			if id.System() != app || id.Kind() != eid.MustCode(kind) || id.Writer() != l.Writer {
+				t.Fatalf("%s is not an app %s inside %s", id, kind, l)
+			}
+			if got := mustRun(t, e, "valid", id.String()); got != "ok\n" {
+				t.Fatalf("valid %s: %q", id, got)
+			}
+		}
+	}
+	var out, errb bytes.Buffer
+	if code := run([]string{"mint", "app", "zzz", "--lease", l.String()}, e, &out, &errb); code != exitRefused ||
+		out.Len() != 0 || errb.String() != "refused: kind\n" {
+		t.Fatalf("mint app zzz: exit %d stdout %q stderr %q", code, out.String(), errb.String())
+	}
+	absent := filepath.Join(t.TempDir(), "absent")
+	out.Reset()
+	errb.Reset()
+	if code := run([]string{"lease", "app", "--home", "m5", "--store", absent}, e, &out, &errb); code != exitRefused ||
+		out.Len() != 0 || errb.String() != "refused: not-home\n" {
+		t.Fatalf("app at m5: exit %d stdout %q stderr %q", code, out.String(), errb.String())
+	}
+	if _, err := os.Stat(absent); !os.IsNotExist(err) {
+		t.Fatalf("a refusal before the store opened created %s (%v)", absent, err)
+	}
+	fmt.Println("G13: app is leased at home echd-os and mints crs, lsn, lpt and chg inside the lease, each valid; the unregistered kind zzz is refused; at home m5 it is refused and the store stays absent")
+}
+
 func TestG13_LeaseRefusalsBeforeTheStoreLeaveItUntouched(t *testing.T) {
 	clock := eid.NewManualClock(now)
 	e := testEnv(clock, map[string]string{"EID_REGISTRY": registryDir(), "EID_HOME": "m5"})

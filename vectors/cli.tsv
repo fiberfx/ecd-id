@@ -40,11 +40,16 @@ mint-kan-prj	mint kan prj -n 1 --lease kan:7:4102444800000:4102531200000	0	kan_p
 mint-kan-trk	mint kan trk -n 1 --lease kan:7:4102444800000:4102531200000	0	kan_trk_25rgqgbq2222222b2222\n	-
 mint-mxe-itm	mint mxe itm -n 2 --lease mxe:5:4102444800000:4102531200000	0	mxe_itm_25rgqgbq222222272222\nmxe_itm_25rgqgbq222222272226\n	-
 mint-mxe-sto	mint mxe sto -n 1 --lease mxe:5:4102444800000:4102531200000	0	mxe_sto_25rgqgbq222222272222\n	-
+mint-app-crs	mint app crs -n 2 --lease app:5:4102444800000:4102531200000	0	app_crs_25rgqgbq222222272222\napp_crs_25rgqgbq222222272226\n	-
+mint-app-lsn	mint app lsn -n 2 --lease app:5:4102444800000:4102531200000	0	app_lsn_25rgqgbq222222272222\napp_lsn_25rgqgbq222222272226\n	-
+mint-app-lpt	mint app lpt -n 1 --lease app:5:4102444800000:4102531200000	0	app_lpt_25rgqgbq222222272222\n	-
+mint-app-chg	mint app chg -n 1 --lease app:5:4102444800000:4102531200000	0	app_chg_25rgqgbq222222272222\n	-
 mint-detached-lease	mint 3ab run -n 2 --lease 3ab:123456789:4102444800000:4102531200000	0	3ab_run_25rgqgbq225prncp2222\n3ab_run_25rgqgbq225prncp2226\n	-
 mint-detached-kind-unregistered	mint 3ab zzz -n 2 --lease 3ab:123456789:4102444800000:4102531200000	0	3ab_zzz_25rgqgbq225prncp2222\n3ab_zzz_25rgqgbq225prncp2226\n	-
 mint-default-count	mint emq job --lease emq:895287301:4102444800000:4102531200000	0	emq_job_25rgqgbq22upu2272222\n	-
 mint-kind-not-registered	mint emq zzz --lease emq:895287301:4102444800000:4102531200000	1	-	refused: kind\n
 mint-mxe-kind-not-registered	mint mxe zzz --lease mxe:5:4102444800000:4102531200000	1	-	refused: kind\n
+mint-app-kind-not-registered	mint app zzz --lease app:5:4102444800000:4102531200000	1	-	refused: kind\n
 mint-kan-kind-not-registered	mint kan spe --lease kan:7:4102444800000:4102531200000	1	-	refused: kind\n
 mint-system-unknown	mint zzz job --lease zzz:5:4102444800000:4102531200000	1	-	refused: unknown\n
 mint-system-retired	mint brd agt --lease brd:5:4102444800000:4102531200000	1	-	refused: state\n
@@ -65,6 +70,7 @@ lease-retired	lease brd --store /tmp/eid-store	1	-	refused: state\n
 lease-no-home	lease emq --store /tmp/eid-store	1	-	refused: not-home\n
 lease-other-home	lease kan --store /tmp/eid-store --home box	1	-	refused: not-home\n
 lease-mxe-other-home	lease mxe --store /tmp/eid-store --home devbox	1	-	refused: not-home\n
+lease-app-other-home	lease app --store /tmp/eid-store --home m5	1	-	refused: not-home\n
 usage-no-command	-	2	-	*
 usage-unknown-command	bogus	2	-	*
 usage-parse-no-id	parse	2	-	*

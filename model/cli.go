@@ -76,6 +76,7 @@ func genCLI() string {
 		kanLease = "kan:7:4102444800000:4102531200000"
 		detLease = "3ab:123456789:4102444800000:4102531200000"
 		mxeLease = "mxe:5:4102444800000:4102531200000"
+		appLease = "app:5:4102444800000:4102531200000"
 	)
 	minted := func(leaseStr, kind string, n int) string {
 		mt := newMinter(must(parseLease(leaseStr)))
@@ -99,6 +100,10 @@ func genCLI() string {
 	}
 	mintRow("mint-mxe-itm", "mxe", "itm", 2, mxeLease)
 	mintRow("mint-mxe-sto", "mxe", "sto", 1, mxeLease)
+	mintRow("mint-app-crs", "app", "crs", 2, appLease)
+	mintRow("mint-app-lsn", "app", "lsn", 2, appLease)
+	mintRow("mint-app-lpt", "app", "lpt", 1, appLease)
+	mintRow("mint-app-chg", "app", "chg", 1, appLease)
 	mintRow("mint-detached-lease", "3ab", "run", 2, detLease)
 	// A detached system has no registry rows: a kind that no row names mints (spec/registry.md#lease-free).
 	mintRow("mint-detached-kind-unregistered", "3ab", "zzz", 2, detLease)
@@ -110,6 +115,7 @@ func genCLI() string {
 	// Refusals that follow from registry/: emq has no kind zzz, zzz is no system and brd is retired.
 	refused("mint-kind-not-registered", "mint emq zzz --lease "+emqLease, "kind")
 	refused("mint-mxe-kind-not-registered", "mint mxe zzz --lease "+mxeLease, "kind")
+	refused("mint-app-kind-not-registered", "mint app zzz --lease "+appLease, "kind")
 	refused("mint-kan-kind-not-registered", "mint kan spe --lease "+kanLease, "kind")
 	refused("mint-system-unknown", "mint zzz job --lease zzz:5:4102444800000:4102531200000", "unknown")
 	refused("mint-system-retired", "mint brd agt --lease brd:5:4102444800000:4102531200000", "state")
@@ -143,6 +149,7 @@ func genCLI() string {
 	refused("lease-no-home", "lease emq"+leaseStore, "not-home")
 	refused("lease-other-home", "lease kan"+leaseStore+" --home box", "not-home")
 	refused("lease-mxe-other-home", "lease mxe"+leaseStore+" --home devbox", "not-home")
+	refused("lease-app-other-home", "lease app"+leaseStore+" --home m5", "not-home")
 
 	usage := func(name, args string) { out.WriteString(cliRow(name, args, 2, "", "*")) }
 	usage("usage-no-command", "-")

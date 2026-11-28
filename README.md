@@ -128,6 +128,16 @@ A process takes its lease with `eid lease SYSTEM --store "$EID_STORE"` ([spec/cl
 
 ### Release notes
 
+- **0.11.1** changes the registry only; no library code changed. The system `app` (learning system apps and edu
+  content) is registered, live, with `echd-os` (the edge Fly app) as its home, and holds four entities: `crs` (course),
+  `lsn` (lesson), `lpt` (lesson part, one part of at most 4096 bytes of a lesson's text) and `chg` (change, one
+  attributed content change, written in the same deed as the change). The system `kan` gains seven entities since
+  0.11.0: `usr` (user turn), `pin` (incoming message), `snd` (recipient of an outgoing message), `seg` (segment of a
+  shell command), `que` (queued prompt), `sgt` (flow run named in a tool result) and `fev` (event of a flow machine).
+  Vector rows: `mint-app-crs`, `mint-app-lsn`, `mint-app-lpt`, `mint-app-chg`, `mint-app-kind-not-registered`,
+  `lease-app-other-home`. A running `eid` reads the registry folder at each start, so a host takes the kinds when its
+  `EID_REGISTRY` copy is replaced; no rebuild. The crate `eid` and `fiberfx-eid` take 0.11.1, and the Go module
+  `github.com/fiberfx/ecd-id/go` takes v0.11.1.
 - **0.11.0** adds to the Go module the ten role constants `RoleEntity`, `RoleActivation`, `RoleCommand`, `RoleRun`,
   `RoleStream`, `RoleStore`, `RoleDatabase`, `RoleTransaction`, `RoleCorrelation` and `RoleRequest`, and
   `Registry.KindsByRole(system, role)`, the kinds of one system that have one role, in code order and in every state;

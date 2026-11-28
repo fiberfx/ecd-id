@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fiberfx-eid"
-version = "0.11.0"
+version = "0.11.1"
 description = "The Ecd ID (eid), version 1: parse, format, binary, leases, stream ids and brd14 ids. No minting."
 readme = "README.md"
 requires-python = ">=3.12"
