@@ -77,6 +77,7 @@ func genCLI() string {
 		detLease = "3ab:123456789:4102444800000:4102531200000"
 		mxeLease = "mxe:5:4102444800000:4102531200000"
 		appLease = "app:5:4102444800000:4102531200000"
+		llmLease = "llm:5:4102444800000:4102531200000"
 	)
 	minted := func(leaseStr, kind string, n int) string {
 		mt := newMinter(must(parseLease(leaseStr)))
@@ -102,6 +103,9 @@ func genCLI() string {
 	mintRow("mint-mxe-sto", "mxe", "sto", 1, mxeLease)
 	mintRow("mint-app-ech", "app", "ech", 2, appLease)
 	mintRow("mint-app-mxs", "app", "mxs", 1, appLease)
+	mintRow("mint-llm-ses", "llm", "ses", 2, llmLease)
+	mintRow("mint-llm-cnv", "llm", "cnv", 2, llmLease)
+	mintRow("mint-llm-arc", "llm", "arc", 1, llmLease)
 	mintRow("mint-detached-lease", "3ab", "run", 2, detLease)
 	// A detached system has no registry rows: a kind that no row names mints (spec/registry.md#lease-free).
 	mintRow("mint-detached-kind-unregistered", "3ab", "zzz", 2, detLease)
@@ -117,6 +121,7 @@ func genCLI() string {
 	// A kind that is closed or retired mints nothing: app ecd is reserved for ecd-core, app crs is retired.
 	refused("mint-app-ecd-closed", "mint app ecd --lease "+appLease, "kind")
 	refused("mint-app-crs-retired", "mint app crs --lease "+appLease, "kind")
+	refused("mint-llm-kind-not-registered", "mint llm zzz --lease "+llmLease, "kind")
 	refused("mint-kan-kind-not-registered", "mint kan spe --lease "+kanLease, "kind")
 	refused("mint-system-unknown", "mint zzz job --lease zzz:5:4102444800000:4102531200000", "unknown")
 	refused("mint-system-retired", "mint brd agt --lease brd:5:4102444800000:4102531200000", "state")
@@ -151,6 +156,7 @@ func genCLI() string {
 	refused("lease-other-home", "lease kan"+leaseStore+" --home box", "not-home")
 	refused("lease-mxe-other-home", "lease mxe"+leaseStore+" --home devbox", "not-home")
 	refused("lease-app-other-home", "lease app"+leaseStore+" --home m5", "not-home")
+	refused("lease-llm-other-home", "lease llm"+leaseStore+" --home devbox", "not-home")
 
 	usage := func(name, args string) { out.WriteString(cliRow(name, args, 2, "", "*")) }
 	usage("usage-no-command", "-")

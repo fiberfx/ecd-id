@@ -8,5 +8,6 @@ ecd	ecd-core daemon	ecd-core	-	live	-
 emq	EchoMQ	-	-	live	-
 fvx	fv supervisor	-	-	live	-
 kan	KAN	-	m5	live	-
+llm	agent sessions, conversations and turns of language-model work	-	m5	live	-
 mxe	mx-echo applications	-	m5	live	-
 mxr	mx and mx-exec runs	-	-	live	-

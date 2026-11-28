@@ -98,6 +98,9 @@ kan	ssn	activation	live	-	session of Claude Code, as kan-analytics ingests it
 kan	trk	entity	live	-	track node, its record
 kan	trn	stream	live	-	transcript, one file of a session or of a helper
 kan	usr	entity	live	-	user turn, a user line of a transcript that carries no tool result
+llm	arc	entity	live	-	an archived conversation
+llm	cnv	entity	live	-	a conversation
+llm	ses	entity	live	-	a chat session, resident while it is in use
 mxe	cor	correlation	live	-	correlation id
 mxe	itm	entity	live	-	item key in an mx-echo app's store
 mxe	req	request	live	-	request

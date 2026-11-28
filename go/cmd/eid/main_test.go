@@ -375,6 +375,52 @@ func TestG13_LeaseGrantsAppAtItsHomeAndRefusesElsewhere(t *testing.T) {
 	fmt.Println("G13: app is leased at home echd-os and mints ech and mxs inside the lease, each valid; the unregistered zzz, the closed ecd and the retired crs, lsn, lpt and chg are refused; at home m5 it is refused and the store stays absent")
 }
 
+func TestG13_LeaseGrantsLlmAtItsHomeAndRefusesElsewhere(t *testing.T) {
+	clock := eid.NewManualClock(now)
+	e := testEnv(clock, map[string]string{"EID_REGISTRY": registryDir(), "EID_HOME": "devbox"})
+	store := t.TempDir()
+	l := leaseOf(t, mustRun(t, e, "lease", "llm", "--home", "m5", "--store", store, "--registry", registryDir()))
+	llm := eid.MustCode("llm")
+	if l.System != llm || l.NotAfter-l.NotBefore != eid.LeaseTermMax {
+		t.Fatalf("lease %s is not a 24 hour lease of llm", l)
+	}
+	for _, kind := range []string{"ses", "cnv", "arc"} {
+		ids := idsOf(t, mustRun(t, e, "mint", "llm", kind, "-n", "3", "--lease", l.String()))
+		if len(ids) != 3 {
+			t.Fatalf("mint llm %s: %d ids", kind, len(ids))
+		}
+		for _, id := range ids {
+			if id.System() != llm || id.Kind() != eid.MustCode(kind) || id.Writer() != l.Writer {
+				t.Fatalf("%s is not an llm %s inside %s", id, kind, l)
+			}
+			if got := mustRun(t, e, "valid", id.String()); got != "ok\n" {
+				t.Fatalf("valid %s: %q", id, got)
+			}
+		}
+	}
+	var out, errb bytes.Buffer
+	// zzz is no kind of any system; aus is a kind of kan, not of llm.
+	for _, kind := range []string{"zzz", "aus"} {
+		out.Reset()
+		errb.Reset()
+		if code := run([]string{"mint", "llm", kind, "--lease", l.String()}, e, &out, &errb); code != exitRefused ||
+			out.Len() != 0 || errb.String() != "refused: kind\n" {
+			t.Fatalf("mint llm %s: exit %d stdout %q stderr %q", kind, code, out.String(), errb.String())
+		}
+	}
+	absent := filepath.Join(t.TempDir(), "absent")
+	out.Reset()
+	errb.Reset()
+	if code := run([]string{"lease", "llm", "--home", "devbox", "--store", absent}, e, &out, &errb); code != exitRefused ||
+		out.Len() != 0 || errb.String() != "refused: not-home\n" {
+		t.Fatalf("llm at devbox: exit %d stdout %q stderr %q", code, out.String(), errb.String())
+	}
+	if _, err := os.Stat(absent); !os.IsNotExist(err) {
+		t.Fatalf("a refusal before the store opened created %s (%v)", absent, err)
+	}
+	fmt.Println("G13: llm is leased at home m5 and mints ses, cnv and arc inside the lease, each valid; the unregistered zzz and kan's aus are refused; at home devbox it is refused and the store stays absent")
+}
+
 func TestG13_LeaseRefusalsBeforeTheStoreLeaveItUntouched(t *testing.T) {
 	clock := eid.NewManualClock(now)
 	e := testEnv(clock, map[string]string{"EID_REGISTRY": registryDir(), "EID_HOME": "m5"})
